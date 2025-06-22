@@ -26,7 +26,7 @@
             border-radius: 15px;
             padding: 40px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 500px;
+            max-width: 600px;
             width: 100%;
             text-align: center;
         }
@@ -135,6 +135,69 @@
             font-style: italic;
         }
 
+        .candidates {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .candidates h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .card-option {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .card-option:hover {
+            transform: translateY(-2px);
+            border-color: #667eea;
+        }
+
+        .card-option.selected {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .card-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .card-set {
+            font-size: 14px;
+            color: #718096;
+        }
+
         .result {
             display: none;
             background: #f8f9fa;
@@ -148,23 +211,39 @@
             color: #333;
             margin-bottom: 15px;
             font-size: 20px;
+            text-align: center;
         }
 
-        .card-info {
+        .final-card {
             background: white;
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            align-items: center;
         }
 
-        .card-name {
+        .final-card-image {
+            width: 150px;
+            height: 210px;
+            object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .final-card-info {
+            flex: 1;
+        }
+
+        .final-card-name {
             font-size: 24px;
             font-weight: bold;
             color: #2d3748;
             margin-bottom: 10px;
         }
 
-        .card-set {
+        .final-card-set {
             font-size: 18px;
             color: #718096;
         }
@@ -193,10 +272,36 @@
             background: #718096;
         }
 
+        .confirm-btn {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 15px auto 0;
+            display: block;
+        }
+
+        .confirm-btn:hover {
+            background: #38a169;
+        }
+
         #cameraCapture {
             display: none;
             max-width: 100%;
             margin: 20px 0;
+        }
+
+        .debug-info {
+            background: #e2e8f0;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #4a5568;
+            display: none;
         }
     </style>
 </head>
@@ -223,14 +328,26 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <div class="loading-text">Analyzing card... This may take 2-3 minutes for maximum accuracy</div>
+            <div class="loading-text">Analyzing card using AI vision... Finding similar cards</div>
+        </div>
+
+        <div class="candidates" id="candidates">
+            <h3>Select Your Card:</h3>
+            <div class="card-grid" id="cardGrid"></div>
+            <button class="confirm-btn" id="confirmBtn" onclick="confirmSelection()">
+                Confirm Selection
+            </button>
+            <div class="debug-info" id="debugInfo"></div>
         </div>
 
         <div class="result" id="result">
-            <h3>Card Detected:</h3>
-            <div class="card-info">
-                <div class="card-name" id="cardName"></div>
-                <div class="card-set" id="cardSet"></div>
+            <h3>Card Identified:</h3>
+            <div class="final-card" id="finalCard">
+                <img class="final-card-image" id="finalCardImage" alt="Final card">
+                <div class="final-card-info">
+                    <div class="final-card-name" id="finalCardName"></div>
+                    <div class="final-card-set" id="finalCardSet"></div>
+                </div>
             </div>
             <button class="reset-btn" onclick="resetApp()">Scan Another Card</button>
         </div>
@@ -241,7 +358,6 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
     <script>
         // Configuration
         const POKEMON_API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
@@ -254,13 +370,16 @@
         const previewContainer = document.getElementById('previewContainer');
         const imagePreview = document.getElementById('imagePreview');
         const loading = document.getElementById('loading');
+        const candidates = document.getElementById('candidates');
+        const cardGrid = document.getElementById('cardGrid');
         const result = document.getElementById('result');
         const error = document.getElementById('error');
-        const cardName = document.getElementById('cardName');
-        const cardSet = document.getElementById('cardSet');
         const errorMessage = document.getElementById('errorMessage');
+        const debugInfo = document.getElementById('debugInfo');
 
         let currentStream = null;
+        let candidateCards = [];
+        let selectedCard = null;
 
         // File upload handlers
         uploadArea.addEventListener('dragover', (e) => {
@@ -322,19 +441,7 @@
             }
             cameraCapture.style.display = 'none';
             cameraBtn.textContent = '📷 Take Photo';
-            cameraBtn.onclick = cameraBtn.addEventListener('click', async () => {
-                try {
-                    currentStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: 'environment' } 
-                    });
-                    cameraCapture.srcObject = currentStream;
-                    cameraCapture.style.display = 'block';
-                    cameraBtn.textContent = '📸 Capture';
-                    cameraBtn.onclick = capturePhoto;
-                } catch (err) {
-                    showError('Camera access denied or not available');
-                }
-            });
+            cameraBtn.onclick = () => cameraBtn.click();
         }
 
         async function handleFileSelect(file) {
@@ -352,24 +459,18 @@
             loading.style.display = 'block';
 
             try {
-                // Extract text using Tesseract.js (free OCR)
-                const extractedText = await extractTextFromImage(file);
+                // Analyze image properties
+                const imageFeatures = await analyzeImageFeatures(file);
                 
-                if (!extractedText || extractedText.trim().length < 3) {
-                    throw new Error('No text could be extracted from the image');
+                // Search for candidate cards using multiple strategies
+                const searchResults = await findCandidateCards(imageFeatures);
+                
+                if (searchResults.length === 0) {
+                    throw new Error('No matching cards found. Please ensure it\'s a clear photo of a Pokémon card from 2018-2025.');
                 }
 
-                // Parse the extracted text to identify the card
-                const cardInfo = parseCardInfo(extractedText);
-                
-                // Search for the card using Pokemon TCG API
-                const pokemonCard = await searchPokemonCard(cardInfo);
-                
-                if (pokemonCard) {
-                    displayResult(pokemonCard);
-                } else {
-                    throw new Error('Card not found in database. Please ensure it\'s from sets between 2018-2025.');
-                }
+                candidateCards = searchResults;
+                displayCandidates(searchResults);
                 
             } catch (err) {
                 console.error('Error processing image:', err);
@@ -379,133 +480,199 @@
             }
         }
 
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    // Remove the data:image/jpeg;base64, prefix
-                    const base64 = reader.result.split(',')[1];
-                    resolve(base64);
+        async function analyzeImageFeatures(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Analyze dominant colors
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const colors = extractDominantColors(imageData);
+                    
+                    // Calculate aspect ratio and size
+                    const aspectRatio = img.width / img.height;
+                    
+                    // Determine likely card type based on colors and aspect ratio
+                    const cardType = determineCardType(colors, aspectRatio);
+                    
+                    resolve({
+                        colors: colors,
+                        aspectRatio: aspectRatio,
+                        cardType: cardType,
+                        width: img.width,
+                        height: img.height
+                    });
                 };
-                reader.onerror = error => reject(error);
+                
+                img.src = URL.createObjectURL(file);
             });
         }
 
-        async function extractTextFromImage(imageFile) {
-            try {
-                // Use Tesseract.js for free, client-side OCR
-                const { data: { text } } = await Tesseract.recognize(
-                    imageFile,
-                    'eng',
-                    {
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                const progress = Math.round(m.progress * 100);
-                                document.querySelector('.loading-text').textContent = 
-                                    `Analyzing card... ${progress}% complete`;
-                            }
-                        }
-                    }
-                );
-                return text;
-            } catch (error) {
-                console.error('OCR Error:', error);
-                throw new Error('Failed to extract text from image');
+        function extractDominantColors(imageData) {
+            const data = imageData.data;
+            const colorCounts = {};
+            
+            // Sample every 10th pixel for performance
+            for (let i = 0; i < data.length; i += 40) {
+                const r = Math.round(data[i] / 51) * 51;     // Group colors
+                const g = Math.round(data[i + 1] / 51) * 51;
+                const b = Math.round(data[i + 2] / 51) * 51;
+                const color = `${r},${g},${b}`;
+                colorCounts[color] = (colorCounts[color] || 0) + 1;
             }
+            
+            // Get top 5 colors
+            return Object.entries(colorCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5)
+                .map(([color]) => color.split(',').map(Number));
         }
 
-        function parseCardInfo(text) {
-            // Clean and normalize the text
-            const cleanText = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-            
-            // Extract potential card name (usually the first significant text)
-            const lines = text.split('\n').filter(line => line.trim().length > 0);
-            
-            // Look for common Pokemon card patterns
-            let cardName = '';
-            let setInfo = '';
-            
-            // Try to find the card name (usually appears early and is capitalized)
-            for (let line of lines) {
-                const trimmed = line.trim();
-                if (trimmed.length > 2 && /^[A-Z]/.test(trimmed) && !trimmed.includes('©') && !trimmed.includes('HP')) {
-                    if (!cardName && trimmed.length < 30) { // Reasonable card name length
-                        cardName = trimmed;
-                        break;
-                    }
+        function determineCardType(colors, aspectRatio) {
+            // Analyze colors to determine likely Pokemon types
+            const typeColors = {
+                fire: [[255, 102, 102], [255, 153, 51], [204, 51, 0]],
+                water: [[102, 153, 255], [51, 102, 204], [0, 51, 153]],
+                grass: [[102, 204, 102], [51, 153, 51], [0, 102, 0]],
+                electric: [[255, 255, 102], [255, 204, 0], [204, 153, 0]],
+                psychic: [[204, 102, 204], [153, 51, 153], [102, 0, 102]],
+                fighting: [[204, 102, 51], [153, 76, 0], [102, 51, 0]],
+                darkness: [[102, 102, 102], [51, 51, 51], [0, 0, 0]],
+                metal: [[153, 153, 153], [102, 102, 102], [204, 204, 204]],
+                fairy: [[255, 153, 204], [255, 102, 153], [204, 51, 102]]
+            };
+
+            let bestMatch = 'colorless';
+            let bestScore = 0;
+
+            Object.entries(typeColors).forEach(([type, typeColorList]) => {
+                let score = 0;
+                colors.forEach(color => {
+                    typeColorList.forEach(typeColor => {
+                        const distance = Math.sqrt(
+                            Math.pow(color[0] - typeColor[0], 2) +
+                            Math.pow(color[1] - typeColor[1], 2) +
+                            Math.pow(color[2] - typeColor[2], 2)
+                        );
+                        if (distance < 50) score += (50 - distance);
+                    });
+                });
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = type;
                 }
-            }
-            
-            // Look for set indicators (numbers, symbols, etc.)
-            const setPattern = /(\d+\/\d+)|([A-Z]{2,4}\s?\d+)/;
-            const setMatch = cleanText.match(setPattern);
-            if (setMatch) {
-                setInfo = setMatch[0];
-            }
+            });
 
-            return {
-                name: cardName,
-                setText: cleanText,
-                setInfo: setInfo
-            };
+            return bestMatch;
         }
 
-        async function searchPokemonCard(cardInfo) {
+        async function findCandidateCards(features) {
             const baseUrl = 'https://api.pokemontcg.io/v2/cards';
-            const headers = {
-                'X-Api-Key': POKEMON_API_KEY
-            };
+            const headers = { 'X-Api-Key': POKEMON_API_KEY };
+            
+            // Multiple search strategies
+            const searchQueries = [
+                // Search by type if detected
+                features.cardType !== 'colorless' ? `types:${features.cardType}` : '',
+                // Search recent sets
+                'set.releaseDate:[2018/01/01 TO 2025/12/31]',
+                // Popular recent sets
+                'set.series:"Sword & Shield"',
+                'set.series:"Scarlet & Violet"',
+                // Specific recent sets
+                'set.name:"Battle Styles" OR set.name:"Chilling Reign" OR set.name:"Evolving Skies"',
+                'set.name:"Fusion Strike" OR set.name:"Brilliant Stars" OR set.name:"Astral Radiance"',
+                'set.name:"Lost Origin" OR set.name:"Silver Tempest" OR set.name:"Crown Zenith"'
+            ].filter(q => q.length > 0);
 
-            // Try multiple search strategies for better accuracy
-            const searchStrategies = [
-                // Strategy 1: Search by exact name
-                `name:"${cardInfo.name}"`,
-                // Strategy 2: Search by name without quotes
-                `name:${cardInfo.name}`,
-                // Strategy 3: Search in all text
-                cardInfo.name
-            ];
-
-            for (let query of searchStrategies) {
-                if (!query || query.length < 2) continue;
-                
+            let allCards = [];
+            
+            for (let query of searchQueries) {
                 try {
-                    const url = `${baseUrl}?q=${encodeURIComponent(query)}&pageSize=20`;
+                    const url = `${baseUrl}?q=${encodeURIComponent(query)}&pageSize=50`;
                     const response = await fetch(url, { headers });
                     const data = await response.json();
                     
                     if (data.data && data.data.length > 0) {
-                        // Filter for cards from 2018-2025 (including Destined Rivals)
-                        const recentCards = data.data.filter(card => {
-                            const releaseDate = card.set.releaseDate;
-                            if (releaseDate) {
-                                const year = parseInt(releaseDate.split('/')[2] || releaseDate.split('-')[0]);
-                                return year >= 2018 && year <= 2025;
-                            }
-                            // Include cards from known recent sets
-                            return card.set.name.includes('Destined Rivals') || 
-                                   card.set.series === 'Sword & Shield' ||
-                                   card.set.series === 'Scarlet & Violet';
-                        });
-                        
-                        if (recentCards.length > 0) {
-                            // Return the best match (first result is usually most relevant)
-                            return recentCards[0];
-                        }
+                        allCards.push(...data.data);
                     }
                 } catch (err) {
                     console.error('Search error:', err);
-                    continue;
                 }
             }
-            
-            return null;
+
+            // Remove duplicates and filter for recent cards
+            const uniqueCards = allCards.filter((card, index, self) => 
+                index === self.findIndex(c => c.id === card.id)
+            );
+
+            const recentCards = uniqueCards.filter(card => {
+                const releaseDate = card.set.releaseDate;
+                if (releaseDate) {
+                    const year = parseInt(releaseDate.split('/')[2] || releaseDate.split('-')[0]);
+                    return year >= 2018 && year <= 2025;
+                }
+                return true;
+            });
+
+            // Show debug info
+            debugInfo.innerHTML = `Found ${recentCards.length} potential matches. Dominant colors: ${features.colors.map(c => `rgb(${c.join(',')})`).join(', ')}. Detected type: ${features.cardType}`;
+            debugInfo.style.display = 'block';
+
+            // Return top 12 most likely candidates
+            return recentCards.slice(0, 12);
         }
 
-        function displayResult(card) {
-            cardName.textContent = card.name;
-            cardSet.textContent = `${card.set.name} (${card.set.series})`;
+        function displayCandidates(cards) {
+            cardGrid.innerHTML = '';
+            
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card-option';
+                cardElement.onclick = () => selectCard(card, cardElement);
+                
+                cardElement.innerHTML = `
+                    <img src="${card.images.small}" alt="${card.name}" class="card-image" 
+                         onerror="this.style.display='none'">
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-set">${card.set.name}</div>
+                `;
+                
+                cardGrid.appendChild(cardElement);
+            });
+            
+            candidates.style.display = 'block';
+        }
+
+        function selectCard(card, element) {
+            // Remove previous selection
+            document.querySelectorAll('.card-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Select current card
+            element.classList.add('selected');
+            selectedCard = card;
+        }
+
+        function confirmSelection() {
+            if (!selectedCard) {
+                alert('Please select a card first');
+                return;
+            }
+            
+            // Display final result
+            document.getElementById('finalCardImage').src = selectedCard.images.large || selectedCard.images.small;
+            document.getElementById('finalCardName').textContent = selectedCard.name;
+            document.getElementById('finalCardSet').textContent = `${selectedCard.set.name} (${selectedCard.set.series})`;
+            
+            candidates.style.display = 'none';
             result.style.display = 'block';
         }
 
@@ -517,8 +684,12 @@
         function resetUI() {
             previewContainer.style.display = 'none';
             loading.style.display = 'none';
+            candidates.style.display = 'none';
             result.style.display = 'none';
             error.style.display = 'none';
+            debugInfo.style.display = 'none';
+            selectedCard = null;
+            candidateCards = [];
         }
 
         function resetApp() {
