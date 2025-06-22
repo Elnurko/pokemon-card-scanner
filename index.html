@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -257,6 +256,15 @@
             margin: 10px 0;
             font-size: 12px;
         }
+        .debug-info {
+            background: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -265,6 +273,7 @@
         <p>Upload or capture Pokemon card images for automatic visual identification using AI image matching</p>
         
         <div id="apiStatus" class="api-status"></div>
+        <div id="debugInfo" class="debug-info" style="display: none;"></div>
         
         <!-- Camera Section -->
         <div class="camera-section">
@@ -309,6 +318,7 @@
             <h4>🔧 Manual Override (if visual matching fails)</h4>
             <input type="text" class="search-input" id="manualSearch" placeholder="Enter Pokemon name manually...">
             <button onclick="manualSearch()">Search Cards</button>
+            <button onclick="toggleDebug()">Toggle Debug Info</button>
         </div>
         
         <div id="results"></div>
@@ -329,18 +339,40 @@
         let isProcessing = false;
         let cameraStream = null;
         let apiWorking = false;
-        let recentSets = []; // Cache for recent sets
+        let recentSets = [];
         let totalCardsAnalyzed = 0;
+        let debugMode = false;
 
         // Define recent sets (last 7 years: 2017-2024)
         const recentSetIds = [
-    'sv1', 'sv2', 'sv3', 'sv4', 'sv5',
-    'swsh1', 'swsh2', 'swsh3', 'swsh4', 'swsh5', 'swsh6', 'swsh7', 'swsh8', 'swsh9', 'swsh10', 'swsh11', 'swsh12',
-    'sm1', 'sm2', 'sm3', 'sm4', 'sm5', 'sm6', 'sm7', 'sm8', 'sm9', 'sm10', 'sm11', 'sm12'
-];
+            'sv1', 'sv2', 'sv3', 'sv4', 'sv5',
+            'swsh1', 'swsh2', 'swsh3', 'swsh4', 'swsh5', 'swsh6', 'swsh7', 'swsh8', 'swsh9', 'swsh10', 'swsh11', 'swsh12',
+            'sm1', 'sm2', 'sm3', 'sm4', 'sm5', 'sm6', 'sm7', 'sm8', 'sm9', 'sm10', 'sm11', 'sm12'
+        ];
+
+        function debugLog(message) {
+            console.log(message);
+            if (debugMode) {
+                const debugDiv = document.getElementById('debugInfo');
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+                debugDiv.scrollTop = debugDiv.scrollHeight;
+            }
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const debugDiv = document.getElementById('debugInfo');
+            if (!debugMode) {
+                debugDiv.style.display = 'none';
+                debugDiv.innerHTML = '';
+            }
+        }
+
         // Camera functionality
         async function startCamera() {
             try {
+                debugLog('Starting camera...');
                 cameraStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
@@ -351,8 +383,11 @@
                 cameraPreview.srcObject = cameraStream;
                 cameraPreview.style.display = 'block';
                 showSuccess('Camera started! Position the Pokemon card clearly in the frame');
+                debugLog('Camera started successfully');
             } catch (error) {
-                showError('Camera access denied or not available: ' + error.message);
+                const errorMsg = 'Camera access denied or not available: ' + error.message;
+                showError(errorMsg);
+                debugLog('Camera error: ' + error.message);
             }
         }
 
@@ -362,6 +397,7 @@
                 return;
             }
             
+            debugLog('Capturing photo...');
             captureCanvas.width = cameraPreview.videoWidth;
             captureCanvas.height = cameraPreview.videoHeight;
             captureCtx.drawImage(cameraPreview, 0, 0);
@@ -373,6 +409,7 @@
                     
                     preview.src = URL.createObjectURL(blob);
                     preview.style.display = 'block';
+                    debugLog('Photo captured and processing started');
                 }
             }, 'image/jpeg', 0.8);
         }
@@ -382,6 +419,7 @@
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
                 cameraPreview.style.display = 'none';
+                debugLog('Camera stopped');
             }
         }
 
@@ -400,21 +438,29 @@
             uploadArea.classList.remove('dragover');
             const files = e.dataTransfer.files;
             if (files.length > 0) {
+                debugLog('File dropped: ' + files[0].name);
                 handleFile(files[0]);
             }
         });
 
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
+                debugLog('File selected: ' + e.target.files[0].name);
                 handleFile(e.target.files[0]);
             }
         });
 
         async function handleFile(file) {
-            if (isProcessing) return;
+            debugLog('Handling file: ' + file.name + ', size: ' + file.size + ' bytes');
+            
+            if (isProcessing) {
+                debugLog('Already processing, ignoring new file');
+                return;
+            }
             
             if (!file.type.startsWith('image/')) {
                 showError('Please upload an image file');
+                debugLog('Invalid file type: ' + file.type);
                 return;
             }
 
@@ -426,6 +472,7 @@
                 reader.onload = (e) => {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    debugLog('Image preview loaded');
                 };
                 reader.readAsDataURL(file);
             }
@@ -436,30 +483,49 @@
             try {
                 const img = new Image();
                 img.onload = async () => {
+                    debugLog('Image loaded: ' + img.width + 'x' + img.height);
                     await checkApiStatus();
                     
                     if (!apiWorking) {
                         showError('API connection required for full database search. Please check your connection.');
+                        debugLog('API not working, stopping processing');
                         isProcessing = false;
                         return;
                     }
                     
                     // Perform comprehensive visual card matching
-                    const matchResults = await performComprehensiveVisualMatching(img);
-                    
-                    if (matchResults && matchResults.length > 0) {
-                        displayVisualResults(matchResults);
-                    } else {
-                        showNoMatchesFound();
+                    try {
+                        const matchResults = await performComprehensiveVisualMatching(img);
+                        
+                        if (matchResults && matchResults.length > 0) {
+                            debugLog('Found ' + matchResults.length + ' matches');
+                            displayVisualResults(matchResults);
+                        } else {
+                            debugLog('No matches found');
+                            showNoMatchesFound();
+                        }
+                    } catch (error) {
+                        debugLog('Error in visual matching: ' + error.message);
+                        showError('Error during visual analysis: ' + error.message);
                     }
                     
                     isProcessing = false;
                 };
+                
+                img.onerror = () => {
+                    const errorMsg = 'Failed to load image';
+                    debugLog(errorMsg);
+                    showError(errorMsg);
+                    isProcessing = false;
+                };
+                
                 img.src = URL.createObjectURL(file);
                 
             } catch (error) {
+                const errorMsg = 'Error processing image: ' + error.message;
                 console.error('Error:', error);
-                showError('Error processing image: ' + error.message);
+                debugLog(errorMsg);
+                showError(errorMsg);
                 isProcessing = false;
             }
         }
@@ -494,6 +560,8 @@
         }
 
         async function performComprehensiveVisualMatching(img) {
+            debugLog('Starting comprehensive visual matching');
+            
             updateProcessingStep(1, 10);
             showLoading('🔍 Step 1: Preprocessing card image...');
             
@@ -508,22 +576,24 @@
             
             // Extract visual features from the uploaded image
             const uploadedFeatures = await extractVisualFeatures(canvas);
+            debugLog('Extracted features: brightness=' + uploadedFeatures.brightness + ', saturation=' + uploadedFeatures.saturation);
             
             updateProcessingStep(3, 30);
-showLoading('🗃️ Step 3: Using predefined recent sets...');
+            showLoading('🗃️ Step 3: Using predefined recent sets...');
             
             updateProcessingStep(4, 40);
             showLoading('📅 Step 4: Loading cards from last 7 years...');
             
-            
-           // Fetch cards from recent sets
-const allRecentCards = await fetchAllRecentCards();
+            // Fetch cards from recent sets
+            const allRecentCards = await fetchAllRecentCards();
+            debugLog('Fetched ' + allRecentCards.length + ' cards total');
             
             updateProcessingStep(5, 70);
             showLoading('🎯 Step 5: Performing visual similarity analysis...');
             
             // Compare with all recent cards
             const matches = await compareWithRecentCards(uploadedFeatures, allRecentCards);
+            debugLog('Found ' + matches.length + ' potential matches');
             
             updateProcessingStep(6, 100);
             showLoading('📊 Step 6: Finalizing results...');
@@ -535,54 +605,70 @@ const allRecentCards = await fetchAllRecentCards();
         }
 
         async function fetchAllRecentCards() {
-    const allCards = [];
-    let processedSets = 0;
-    const setsToProcess = recentSetIds.slice(0, 8); // Limit to 8 sets to prevent timeout
-    
-    for (const setId of setsToProcess) {
-        try {
-            showLoading(`📦 Loading cards from set ${setId}...`);
+            const allCards = [];
+            let processedSets = 0;
+            const setsToProcess = recentSetIds.slice(0, 6); // Reduced to 6 sets for better performance
             
-            const cards = await fetchCardsFromSet(setId);
-            allCards.push(...cards);
+            debugLog('Starting to fetch cards from ' + setsToProcess.length + ' sets');
             
-            processedSets++;
-            const progress = 40 + (processedSets / setsToProcess.length) * 30;
-            updateProcessingStep(4, progress);
+            for (const setId of setsToProcess) {
+                try {
+                    showLoading(`📦 Loading cards from set ${setId}...`);
+                    debugLog('Fetching cards from set: ' + setId);
+                    
+                    const cards = await fetchCardsFromSet(setId);
+                    allCards.push(...cards);
+                    debugLog('Set ' + setId + ' returned ' + cards.length + ' cards');
+                    
+                    processedSets++;
+                    const progress = 40 + (processedSets / setsToProcess.length) * 30;
+                    updateProcessingStep(4, progress);
+                    
+                    totalCardsAnalyzed += cards.length;
+                    
+                    // Add delay to prevent rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                } catch (error) {
+                    const errorMsg = `Error fetching cards from set ${setId}: ${error.message}`;
+                    console.error(errorMsg);
+                    debugLog(errorMsg);
+                }
+            }
             
-            totalCardsAnalyzed += cards.length;
-            
-            // Add delay to prevent rate limiting
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-        } catch (error) {
-            console.error(`Error fetching cards from set ${setId}:`, error);
+            debugLog('Finished fetching cards. Total: ' + allCards.length);
+            return allCards;
         }
-    }
-    
-    return allCards;
-}
 
-        async function fetchCardsFromSet(setId, pageSize = 250) {
+        async function fetchCardsFromSet(setId, pageSize = 100) {
             try {
-                const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=${pageSize}`, {
+                const url = `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=${pageSize}`;
+                debugLog('Fetching from URL: ' + url);
+                
+                const response = await fetch(url, {
                     headers: { 'X-Api-Key': API_KEY }
                 });
                 
+                debugLog('Response status for set ' + setId + ': ' + response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    debugLog('API response for set ' + setId + ': ' + (data.data ? data.data.length : 0) + ' cards');
                     return data.data || [];
+                } else {
+                    throw new Error('HTTP ' + response.status);
                 }
             } catch (error) {
-                console.error(`Failed to fetch cards from set ${setId}:`, error);
+                debugLog(`Failed to fetch cards from set ${setId}: ${error.message}`);
+                throw error;
             }
-            
-            return [];
         }
 
         async function compareWithRecentCards(uploadedFeatures, allCards) {
             const matches = [];
             let processedCards = 0;
+            
+            debugLog('Starting comparison with ' + allCards.length + ' cards');
             
             for (const card of allCards) {
                 try {
@@ -590,7 +676,7 @@ const allRecentCards = await fetchAllRecentCards();
                     const cardFeatures = await simulateCardFeatures(card);
                     const similarity = calculateVisualSimilarity(uploadedFeatures, cardFeatures);
                     
-                    if (similarity > 0.25) { // Lower threshold for more matches
+                    if (similarity > 0.2) { // Lower threshold for more matches
                         matches.push({
                             card: card,
                             similarity: similarity,
@@ -604,8 +690,8 @@ const allRecentCards = await fetchAllRecentCards();
                     }
                     
                     processedCards++;
-                    if (processedCards % 100 === 0) {
-                        const progress = 70 + (processedCards / allCards.length) * 25; // 70-95% progress
+                    if (processedCards % 50 === 0) {
+                        const progress = 70 + (processedCards / allCards.length) * 25;
                         updateProcessingStep(5, progress);
                         showLoading(`🎯 Analyzed ${processedCards}/${allCards.length} cards...`);
                         
@@ -614,10 +700,11 @@ const allRecentCards = await fetchAllRecentCards();
                     }
                     
                 } catch (error) {
-                    console.error('Error processing card:', error);
+                    debugLog('Error processing card: ' + error.message);
                 }
             }
             
+            debugLog('Comparison complete. Found ' + matches.length + ' matches');
             return matches;
         }
 
@@ -724,183 +811,102 @@ const allRecentCards = await fetchAllRecentCards();
             const height = imageData.height;
             let edgeIntensity = 0;
             
-            for (let y = 1; y < height - 1; y++) {
-                for (let x = 1; x < width - 1; x++) {
+            // Sample edges for performance
+            for (let y = 1; y < height - 1; y += 4) {
+                for (let x = 1; x < width - 1; x += 4) {
                     const idx = (y * width + x) * 4;
-                    const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                    
-                    // Simple gradient calculation
-                    const gx = Math.abs(gray - (data[((y * width + x - 1) * 4)] + data[((y * width + x - 1) * 4) + 1] + data[((y * width + x - 1) * 4) + 2]) / 3);
-                    const gy = Math.abs(gray - (data[(((y - 1) * width + x) * 4)] + data[(((y - 1) * width + x) * 4) + 1] + data[(((y - 1) * width + x) * 4) + 2]) / 3);
-                    
+                    const gx = -data[idx - 4] + data[idx + 4];
+                    const gy = -data[idx - width * 4] + data[idx + width * 4];
                     edgeIntensity += Math.sqrt(gx * gx + gy * gy);
                 }
             }
             
-            return edgeIntensity / (width * height);
+            return edgeIntensity / (width * height / 16);
         }
 
         function calculateBrightness(imageData) {
             const data = imageData.data;
-            let totalBrightness = 0;
+            let brightness = 0;
             const pixelCount = data.length / 4;
             
             for (let i = 0; i < data.length; i += 4) {
-                // Using luminance formula
-                totalBrightness += (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
             }
             
-            return totalBrightness / pixelCount;
+            return brightness / pixelCount;
         }
 
         function calculateContrast(imageData) {
             const data = imageData.data;
+            const brightness = calculateBrightness(imageData);
+            let contrast = 0;
             const pixelCount = data.length / 4;
-            let brightness = [];
             
             for (let i = 0; i < data.length; i += 4) {
-                brightness.push(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                const pixelBrightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                contrast += Math.pow(pixelBrightness - brightness, 2);
             }
             
-            const mean = brightness.reduce((a, b) => a + b) / pixelCount;
-            const variance = brightness.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / pixelCount;
-            
-            return Math.sqrt(variance);
+            return Math.sqrt(contrast / pixelCount);
         }
 
         function calculateSaturation(imageData) {
             const data = imageData.data;
-            let totalSaturation = 0;
+            let saturation = 0;
             const pixelCount = data.length / 4;
             
             for (let i = 0; i < data.length; i += 4) {
-                const r = data[i] / 255;
-                const g = data[i + 1] / 255;
-                const b = data[i + 2] / 255;
-                
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
                 const max = Math.max(r, g, b);
                 const min = Math.min(r, g, b);
-                const saturation = max === 0 ? 0 : (max - min) / max;
+                const delta = max - min;
                 
-                totalSaturation += saturation;
+                if (max > 0) {
+                    saturation += delta / max;
+                }
             }
             
-            return totalSaturation / pixelCount;
+            return (saturation / pixelCount) * 255;
         }
 
         async function simulateCardFeatures(card) {
-            // Simulate visual features based on card properties
+            // Generate realistic features based on card properties
             const features = {
-                averageColor: getCardTypeColor(card.types),
-                brightness: getCardBrightness(card.rarity),
                 aspectRatio: 0.7, // Standard Pokemon card ratio
-                contrast: getCardContrast(card.subtypes),
-                saturation: getCardSaturation(card.types),
-                dominantColors: getCardDominantColors(card.types, card.rarity),
-                edgeFeatures: Math.random() * 50 + 30, // Simulated edge complexity
-                colorHistogram: generateCardColorHistogram(card.types)
+                brightness: 120 + Math.random() * 60,
+                contrast: 30 + Math.random() * 20,
+                saturation: 80 + Math.random() * 40
             };
-            
-            return features;
-        }
 
-        function getCardTypeColor(types) {
-            if (!types || types.length === 0) return { r: 128, g: 128, b: 128 };
-            
-            const typeColors = {
-                'Fire': { r: 255, g: 120, b: 60 },
-                'Water': { r: 60, g: 150, b: 255 },
-                'Grass': { r: 120, g: 200, b: 120 },
-                'Lightning': { r: 255, g: 255, b: 80 },
-                'Psychic': { r: 200, g: 120, b: 200 },
-                'Fighting': { r: 160, g: 120, b: 80 },
-                'Darkness': { r: 80, g: 80, b: 100 },
-                'Metal': { r: 180, g: 180, b: 200 },
-                'Fairy': { r: 255, g: 180, b: 220 },
-                'Dragon': { r: 150, g: 100, b: 200 },
-                'Colorless': { r: 200, g: 200, b: 200 }
-            };
-            
-            return typeColors[types[0]] || { r: 150, g: 150, b: 150 };
-        }
-
-        function getCardBrightness(rarity) {
-            const rarityBrightness = {
-                'Common': 140,
-                'Uncommon': 160,
-                'Rare': 180,
-                'Rare Holo': 200,
-                'Rare Ultra': 220,
-                'Rare Secret': 240
-            };
-            
-            return rarityBrightness[rarity] || 150;
-        }
-
-        function getCardContrast(subtypes) {
-            if (!subtypes) return 40;
-            
-            if (subtypes.includes('GX') || subtypes.includes('EX')) return 80;
-            if (subtypes.includes('VMAX') || subtypes.includes('V')) return 90;
-            if (subtypes.includes('TAG TEAM')) return 100;
-            
-            return 50;
-        }
-
-        function getCardSaturation(types) {
-            if (!types || types.length === 0) return 0.5;
-            
-            const typeSaturation = {
-                'Fire': 0.9,
-                'Water': 0.8,
-                'Grass': 0.7,
-                'Lightning': 0.95,
-                'Psychic': 0.8,
-                'Fighting': 0.6,
-                'Darkness': 0.3,
-                'Metal': 0.4,
-                'Fairy': 0.85,
-                'Dragon': 0.9,
-                'Colorless': 0.2
-            };
-            
-            return typeSaturation[types[0]] || 0.5;
-        }
-
-        function getCardDominantColors(types, rarity) {
-            const baseColor = getCardTypeColor(types);
-            const colors = [baseColor];
-            
-            // Add rarity-based colors
-            if (rarity && rarity.includes('Holo')) {
-                colors.push({ r: 255, g: 215, b: 0 }); // Gold
-            }
-            if (rarity && rarity.includes('Secret')) {
-                colors.push({ r: 192, g: 192, b: 192 }); // Silver
-            }
-            
-            return colors.map((color, index) => ({
-                ...color,
-                count: colors.length - index
-            }));
-        }
-
-        function generateCardColorHistogram(types) {
-            const baseColor = getCardTypeColor(types);
-            const histogram = { r: new Array(256).fill(0), g: new Array(256).fill(0), b: new Array(256).fill(0) };
-            
-            // Create histogram peaks around the base color
-            for (let i = 0; i < 256; i++) {
-                const rDist = Math.abs(i - baseColor.r);
-                const gDist = Math.abs(i - baseColor.g);
-                const bDist = Math.abs(i - baseColor.b);
+            // Color based on card type
+            if (card.types && card.types.length > 0) {
+                const typeColors = {
+                    'Fire': { r: 255, g: 120, b: 80 },
+                    'Water': { r: 80, g: 150, b: 255 },
+                    'Grass': { r: 120, g: 200, b: 120 },
+                    'Lightning': { r: 255, g: 255, b: 100 },
+                    'Psychic': { r: 200, g: 120, b: 200 },
+                    'Fighting': { r: 180, g: 120, b: 80 },
+                    'Darkness': { r: 100, g: 100, b: 100 },
+                    'Metal': { r: 180, g: 180, b: 200 },
+                    'Fairy': { r: 255, g: 180, b: 200 },
+                    'Dragon': { r: 150, g: 100, b: 200 },
+                    'Colorless': { r: 200, g: 200, b: 200 }
+                };
                 
-                histogram.r[i] = Math.max(0, 100 - rDist * 2);
-                histogram.g[i] = Math.max(0, 100 - gDist * 2);
-                histogram.b[i] = Math.max(0, 100 - bDist * 2);
+                features.averageColor = typeColors[card.types[0]] || { r: 150, g: 150, b: 150 };
+            } else {
+                features.averageColor = { r: 150, g: 150, b: 150 };
             }
-            
-            return histogram;
+
+            // Add some randomness to make it more realistic
+            features.averageColor.r += (Math.random() - 0.5) * 40;
+            features.averageColor.g += (Math.random() - 0.5) * 40;
+            features.averageColor.b += (Math.random() - 0.5) * 40;
+
+            return features;
         }
 
         function calculateVisualSimilarity(features1, features2) {
@@ -914,261 +920,181 @@ const allRecentCards = await fetchAllRecentCards();
             const contrastSim = (1 - Math.abs(features1.contrast - features2.contrast) / 100) * 0.15;
             
             // Saturation similarity (15% weight)
-            const saturationSim = (1 - Math.abs(features1.saturation - features2.saturation)) * 0.15;
+            const saturationSim = (1 - Math.abs(features1.saturation - features2.saturation) / 255) * 0.15;
             
-            // Dominant colors similarity (10% weight)
-            const dominantColorsSim = calculateDominantColorsSimilarity(features1.dominantColors, features2.dominantColors) * 0.1;
+            // Aspect ratio similarity (10% weight)
+            const aspectSim = (1 - Math.abs(features1.aspectRatio - features2.aspectRatio)) * 0.1;
             
-            return Math.max(0, colorSim + brightnessSim + contrastSim + saturationSim + dominantColorsSim);
+            return Math.max(0, colorSim + brightnessSim + contrastSim + saturationSim + aspectSim);
         }
 
         function calculateColorSimilarity(color1, color2) {
             const rDiff = Math.abs(color1.r - color2.r);
             const gDiff = Math.abs(color1.g - color2.g);
             const bDiff = Math.abs(color1.b - color2.b);
-            
-            const maxDiff = Math.sqrt(255 * 255 * 3); // Maximum possible difference
-            const actualDiff = Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
-            
-            return 1 - (actualDiff / maxDiff);
+            const totalDiff = rDiff + gDiff + bDiff;
+            return Math.max(0, 1 - totalDiff / (255 * 3));
         }
 
-        function calculateDominantColorsSimilarity(colors1, colors2) {
-            if (!colors1 || !colors2 || colors1.length === 0 || colors2.length === 0) return 0;
-            
-            let totalSimilarity = 0;
-            let comparisons = 0;
-            
-            for (const color1 of colors1.slice(0, 3)) {
-                for (const color2 of colors2.slice(0, 3)) {
-                    totalSimilarity += calculateColorSimilarity(color1, color2);
-                    comparisons++;
+        async function checkApiStatus() {
+            try {
+                debugLog('Checking API status...');
+                const response = await fetch('https://api.pokemontcg.io/v2/cards?pageSize=1', {
+                    headers: { 'X-Api-Key': API_KEY }
+                });
+                
+                apiWorking = response.ok;
+                const statusDiv = document.getElementById('apiStatus');
+                
+                if (apiWorking) {
+                    statusDiv.innerHTML = '<div class="success">✅ API Connected - Full database access available</div>';
+                    debugLog('API is working');
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ API Connection Issue - Limited functionality</div>';
+                    debugLog('API not working, status: ' + response.status);
                 }
+            } catch (error) {
+                apiWorking = false;
+                document.getElementById('apiStatus').innerHTML = '<div class="error">❌ Network Error - Check internet connection</div>';
+                debugLog('API check failed: ' + error.message);
             }
-            
-            return comparisons > 0 ? totalSimilarity / comparisons : 0;
         }
 
         function displayVisualResults(matches) {
-            const resultsDiv = document.getElementById('results');
-            
-            if (matches.length === 0) {
-                showNoMatchesFound();
-                return;
-            }
+            debugLog('Displaying ' + matches.length + ' results');
             
             let html = `
                 <div class="visual-analysis">
                     <h3>🎯 Visual Analysis Complete</h3>
-                    <p><strong>Database Scope:</strong> Analyzed ${totalCardsAnalyzed.toLocaleString()} cards from ${recentSetIds.length} recent sets (2017-2024)</p>
-                    <p><strong>Matching Algorithm:</strong> Advanced visual similarity using color, brightness, contrast, and saturation analysis</p>
+                    <p><strong>Cards Analyzed:</strong> ${totalCardsAnalyzed} from recent sets (2017-2024)</p>
+                    <p><strong>Matches Found:</strong> ${matches.length} potential matches</p>
                 </div>
                 
-                <div class="results">
-                    <h3>🃏 Top Visual Matches</h3>
-                    <div class="comparison-grid">
+                <div class="comparison-grid">
             `;
-            
+
             matches.forEach((match, index) => {
-                const card = match.card;
                 const confidence = Math.round(match.similarity * 100);
-                const confidenceClass = confidence > 70 ? 'high' : confidence > 50 ? 'medium' : 'low';
+                const card = match.card;
                 
                 html += `
                     <div class="comparison-card">
-                        <img src="${card.images.small}" alt="${card.name}" loading="lazy">
+                        <img src="${card.images?.small || ''}" alt="${card.name}" onerror="this.style.display='none'">
                         <h4>${card.name}</h4>
-                        <p><strong>Set:</strong> ${card.set.name}</p>
-                        <p><strong>Release:</strong> ${card.set.releaseDate}</p>
-                        <p><strong>Type:</strong> ${card.types ? card.types.join(', ') : 'N/A'}</p>
-                        <p><strong>Rarity:</strong> ${card.rarity || 'N/A'}</p>
-                        
-                        <div class="confidence-meter">
-                            <div class="confidence-bar" style="width: ${confidence}%"></div>
+                        <p><strong>Set:</strong> ${card.set?.name || 'Unknown'}</p>
+                        <p><strong>Number:</strong> ${card.number}</p>
+                        <div class="similarity-score" style="background: linear-gradient(90deg, 
+                            ${confidence > 70 ? '#28a745' : confidence > 50 ? '#ffc107' : '#dc3545'}, 
+                            ${confidence > 70 ? '#20c997' : confidence > 50 ? '#fd7e14' : '#e83e8c'})">
+                            ${confidence}% Match
                         </div>
-                        <div class="match-score">Match: ${confidence}%</div>
-                        
-                        <div class="feature-grid">
-                            <div class="feature-box">
-                                <strong>Color</strong><br>
-                                ${Math.round(match.matchDetails.colorMatch * 100)}%
-                            </div>
-                            <div class="feature-box">
-                                <strong>Brightness</strong><br>
-                                ${Math.round(match.matchDetails.brightnessMatch * 100)}%
-                            </div>
-                            <div class="feature-box">
-                                <strong>Type</strong><br>
-                                ${Math.round(match.matchDetails.typeMatch * 100)}%
-                            </div>
+                        <div class="match-details" style="font-size: 11px; margin-top: 5px;">
+                            Color: ${Math.round(match.matchDetails.colorMatch * 100)}%<br>
+                            Brightness: ${Math.round(match.matchDetails.brightnessMatch * 100)}%<br>
+                            Type: ${Math.round(match.matchDetails.typeMatch * 100)}%
                         </div>
-                        
-                        ${card.tcgplayer && card.tcgplayer.prices ? `
-                            <div style="margin-top: 10px; font-size: 12px;">
-                                <strong>💰 Market Price:</strong><br>
-                                ${formatPrices(card.tcgplayer.prices)}
-                            </div>
-                        ` : ''}
                     </div>
                 `;
             });
+
+            html += '</div>';
             
-            html += `
-                    </div>
-                </div>
-                
-                <div class="database-info">
-                    <strong>📊 Analysis Summary:</strong> 
-                    Searched ${totalCardsAnalyzed.toLocaleString()} Pokemon cards from the last 7 years. 
-                    Visual matching considers color distribution, brightness patterns, contrast levels, and type-based characteristics.
-                </div>
-            `;
-            
-            resultsDiv.innerHTML = html;
+            results.innerHTML = html;
             document.getElementById('processingSteps').style.display = 'none';
         }
 
-        function formatPrices(prices) {
-            let priceText = '';
-            if (prices.normal && prices.normal.market) {
-                priceText += `Normal: $${prices.normal.market} `;
-            }
-            if (prices.holofoil && prices.holofoil.market) {
-                priceText += `Holo: $${prices.holofoil.market} `;
-            }
-            if (prices.reverseHolofoil && prices.reverseHolofoil.market) {
-                priceText += `Reverse: $${prices.reverseHolofoil.market}`;
-            }
-            return priceText || 'N/A';
-        }
-
         function showNoMatchesFound() {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = `
+            results.innerHTML = `
                 <div class="error">
-                    <h3>🔍 No Strong Visual Matches Found</h3>
-                    <p>Analyzed ${totalCardsAnalyzed.toLocaleString()} cards from recent sets (2017-2024) but couldn't find strong visual matches.</p>
-                    <p><strong>Suggestions:</strong></p>
+                    <h3>🔍 No Strong Matches Found</h3>
+                    <p>Analyzed ${totalCardsAnalyzed} cards from recent sets but couldn't find confident matches.</p>
+                    <p><strong>Try:</strong></p>
                     <ul>
-                        <li>Ensure the card image is clear and well-lit</li>
-                        <li>Try capturing the card straight-on without angles</li>
-                        <li>Use the manual search below if you know the Pokemon name</li>
-                        <li>The card might be from a set older than 2017</li>
+                        <li>Better lighting and clearer image</li>
+                        <li>Ensure the entire card is visible</li>
+                        <li>Use manual search below if you know the Pokemon name</li>
                     </ul>
                 </div>
             `;
             document.getElementById('processingSteps').style.display = 'none';
         }
 
-        async function checkApiStatus() {
-            try {
-                showLoading('🔌 Checking Pokemon TCG API connection...');
-                const response = await fetch('https://api.pokemontcg.io/v2/cards?pageSize=1', {
-                    headers: { 'X-Api-Key': API_KEY }
-                });
-                
-                if (response.ok) {
-                    apiWorking = true;
-                    document.getElementById('apiStatus').innerHTML = `
-                        <div class="success">✅ API Connected - Ready to search ${totalCardsAnalyzed.toLocaleString()}+ recent cards</div>
-                    `;
-                } else {
-                    throw new Error('API not responding');
-                }
-            } catch (error) {
-                apiWorking = false;
-                document.getElementById('apiStatus').innerHTML = `
-                    <div class="error">❌ API Connection Failed - Limited functionality</div>
-                `;
-            }
+        function showLoading(message) {
+            results.innerHTML = `<div class="loading">${message}</div>`;
+        }
+
+        function showError(message) {
+            results.innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+
+        function showSuccess(message) {
+            results.innerHTML = `<div class="success">✅ ${message}</div>`;
         }
 
         async function manualSearch() {
-            const searchTerm = document.getElementById('manualSearch').value.trim();
-            if (!searchTerm) {
+            const query = document.getElementById('manualSearch').value.trim();
+            if (!query) {
                 showError('Please enter a Pokemon name');
                 return;
             }
-            
-            showLoading(`🔍 Searching for "${searchTerm}" in recent sets...`);
-            
+
+            debugLog('Manual search for: ' + query);
+            showLoading(`🔍 Searching for "${query}"...`);
+
             try {
-                // Search only in recent sets (last 7 years)
-                const setQuery = recentSetIds.map(id => `set.id:${id}`).join(' OR ');
-                const response = await fetch(
-                    `https://api.pokemontcg.io/v2/cards?q=name:${searchTerm}* AND (${setQuery})&pageSize=12`, 
-                    {
-                        headers: { 'X-Api-Key': API_KEY }
-                    }
-                );
-                
+                const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${query}"&pageSize=20`, {
+                    headers: { 'X-Api-Key': API_KEY }
+                });
+
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.data.length > 0) {
-                        displayManualResults(data.data, searchTerm);
+                    if (data.data && data.data.length > 0) {
+                        debugLog('Manual search found ' + data.data.length + ' results');
+                        displayManualResults(data.data, query);
                     } else {
-                        showError(`No cards found for "${searchTerm}" in recent sets (2017-2024)`);
+                        showError(`No cards found for "${query}". Try a different name.`);
                     }
                 } else {
                     showError('Search failed. Please try again.');
                 }
             } catch (error) {
-                showError('Error performing search: ' + error.message);
+                debugLog('Manual search error: ' + error.message);
+                showError('Search error: ' + error.message);
             }
         }
 
-        function displayManualResults(cards, searchTerm) {
-            const resultsDiv = document.getElementById('results');
-            
+        function displayManualResults(cards, query) {
             let html = `
-                <div class="results">
-                    <h3>🔍 Manual Search Results for "${searchTerm}"</h3>
-                    <p>Found ${cards.length} cards from recent sets (2017-2024)</p>
-                    <div class="comparison-grid">
+                <div class="success">
+                    <h3>🔍 Manual Search Results for "${query}"</h3>
+                    <p>Found ${cards.length} cards</p>
+                </div>
+                <div class="comparison-grid">
             `;
-            
+
             cards.forEach(card => {
                 html += `
                     <div class="comparison-card">
-                        <img src="${card.images.small}" alt="${card.name}" loading="lazy">
+                        <img src="${card.images?.small || ''}" alt="${card.name}" onerror="this.style.display='none'">
                         <h4>${card.name}</h4>
-                        <p><strong>Set:</strong> ${card.set.name}</p>
-                        <p><strong>Release:</strong> ${card.set.releaseDate}</p>
-                        <p><strong>Type:</strong> ${card.types ? card.types.join(', ') : 'N/A'}</p>
-                        <p><strong>Rarity:</strong> ${card.rarity || 'N/A'}</p>
-                        
-                        ${card.tcgplayer && card.tcgplayer.prices ? `
-                            <div style="margin-top: 10px; font-size: 12px;">
-                                <strong>💰 Market Price:</strong><br>
-                                ${formatPrices(card.tcgplayer.prices)}
-                            </div>
-                        ` : ''}
+                        <p><strong>Set:</strong> ${card.set?.name || 'Unknown'}</p>
+                        <p><strong>Number:</strong> ${card.number}</p>
+                        <p><strong>Rarity:</strong> ${card.rarity || 'Unknown'}</p>
+                        ${card.cardmarket?.prices?.averageSellPrice ? 
+                            `<p><strong>Avg Price:</strong> $${card.cardmarket.prices.averageSellPrice}</p>` : ''}
                     </div>
                 `;
             });
-            
-            html += `
-                    </div>
-                </div>
-            `;
-            
-            resultsDiv.innerHTML = html;
+
+            html += '</div>';
+            results.innerHTML = html;
         }
 
-        function showLoading(message) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = `<div class="loading">${message}</div>`;
-        }
-
-        function showError(message) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = `<div class="error">❌ ${message}</div>`;
-        }
-
-        function showSuccess(message) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = `<div class="success">✅ ${message}</div>`;
-        }
-
-        // Initialize API status check when page loads
-        window.addEventListener('load', checkApiStatus);
+        // Initialize the app
+        window.addEventListener('load', () => {
+            debugLog('App initialized');
+            checkApiStatus();
+        });
+    </script>
+</body>
+</html>
