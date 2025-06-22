@@ -334,40 +334,10 @@
 
         // Define recent sets (last 7 years: 2017-2024)
         const recentSetIds = [
-            // 2024 sets
-            'paldea-evolved', 'obsidian-flames', 'paradox-rift', 'temporal-forces',
-            'twilight-masquerade', 'shrouded-fable', 'stellar-crown',
-            
-            // 2023 sets
-            'scarlet-violet-base', 'paldea-evolved', 'obsidian-flames', 'paradox-rift',
-            'sv3pt5', 'sv4', 'sv4pt5', 'sv5',
-            
-            // 2022 sets
-            'brilliant-stars', 'astral-radiance', 'pokemon-go', 'lost-origin',
-            'silver-tempest', 'crown-zenith',
-            
-            // 2021 sets
-            'battle-styles', 'chilling-reign', 'evolving-skies', 'fusion-strike',
-            'celebrations', 'brilliant-stars',
-            
-            // 2020 sets
-            'sword-shield-base', 'rebel-clash', 'darkness-ablaze', 'champions-path',
-            'vivid-voltage',
-            
-            // 2019 sets
-            'sword-shield-base', 'cosmic-eclipse', 'hidden-fates', 'unified-minds',
-            'unbroken-bonds', 'detective-pikachu', 'team-up',
-            
-            // 2018 sets
-            'sun-moon-base', 'guardians-rising', 'burning-shadows', 'shining-legends',
-            'crimson-invasion', 'ultra-prism', 'forbidden-light', 'celestial-storm',
-            'dragon-majesty', 'lost-thunder', 'team-up',
-            
-            // 2017 sets
-            'sun-moon-base', 'guardians-rising', 'burning-shadows', 'shining-legends',
-            'crimson-invasion'
-        ];
-
+    'sv1', 'sv2', 'sv3', 'sv4', 'sv5',
+    'swsh1', 'swsh2', 'swsh3', 'swsh4', 'swsh5', 'swsh6', 'swsh7', 'swsh8', 'swsh9', 'swsh10', 'swsh11', 'swsh12',
+    'sm1', 'sm2', 'sm3', 'sm4', 'sm5', 'sm6', 'sm7', 'sm8', 'sm9', 'sm10', 'sm11', 'sm12'
+];
         // Camera functionality
         async function startCamera() {
             try {
@@ -540,16 +510,14 @@
             const uploadedFeatures = await extractVisualFeatures(canvas);
             
             updateProcessingStep(3, 30);
-            showLoading('🗃️ Step 3: Fetching recent Pokemon sets...');
-            
-            // Get recent sets from API
-            const recentSets = await fetchRecentSets();
+showLoading('🗃️ Step 3: Using predefined recent sets...');
             
             updateProcessingStep(4, 40);
             showLoading('📅 Step 4: Loading cards from last 7 years...');
             
-            // Fetch cards from recent sets
-            const allRecentCards = await fetchAllRecentCards(recentSets);
+            
+           // Fetch cards from recent sets
+const allRecentCards = await fetchAllRecentCards();
             
             updateProcessingStep(5, 70);
             showLoading('🎯 Step 5: Performing visual similarity analysis...');
@@ -566,61 +534,34 @@
             return matches.slice(0, 8); // Return top 8 matches
         }
 
-        async function fetchRecentSets() {
-            try {
-                showLoading('🔍 Fetching Pokemon sets from last 7 years...');
-                
-                const response = await fetch('https://api.pokemontcg.io/v2/sets?pageSize=250', {
-                    headers: { 'X-Api-Key': API_KEY }
-                });
-                
-                if (!response.ok) throw new Error('Failed to fetch sets');
-                
-                const data = await response.json();
-                const currentYear = new Date().getFullYear();
-                const cutoffYear = currentYear - 7; // Last 7 years
-                
-                // Filter sets from last 7 years
-                const recentSets = data.data.filter(set => {
-                    const releaseYear = new Date(set.releaseDate).getFullYear();
-                    return releaseYear >= cutoffYear;
-                });
-                
-                return recentSets;
-                
-            } catch (error) {
-                console.error('Error fetching recent sets:', error);
-                return [];
-            }
-        }
-
-        async function fetchAllRecentCards(sets) {
-            const allCards = [];
-            let processedSets = 0;
+        async function fetchAllRecentCards() {
+    const allCards = [];
+    let processedSets = 0;
+    const setsToProcess = recentSetIds.slice(0, 8); // Limit to 8 sets to prevent timeout
+    
+    for (const setId of setsToProcess) {
+        try {
+            showLoading(`📦 Loading cards from set ${setId}...`);
             
-            for (const set of sets) {
-                try {
-                    showLoading(`📦 Loading cards from ${set.name} (${set.releaseDate})...`);
-                    
-                    const cards = await fetchCardsFromSet(set.id);
-                    allCards.push(...cards);
-                    
-                    processedSets++;
-                    const progress = 40 + (processedSets / sets.length) * 30; // 40-70% progress
-                    updateProcessingStep(4, progress);
-                    
-                    totalCardsAnalyzed += cards.length;
-                    
-                    // Add small delay to prevent rate limiting
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                } catch (error) {
-                    console.error(`Error fetching cards from set ${set.id}:`, error);
-                }
-            }
+            const cards = await fetchCardsFromSet(setId);
+            allCards.push(...cards);
             
-            return allCards;
+            processedSets++;
+            const progress = 40 + (processedSets / setsToProcess.length) * 30;
+            updateProcessingStep(4, progress);
+            
+            totalCardsAnalyzed += cards.length;
+            
+            // Add delay to prevent rate limiting
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+        } catch (error) {
+            console.error(`Error fetching cards from set ${setId}:`, error);
         }
+    }
+    
+    return allCards;
+}
 
         async function fetchCardsFromSet(setId, pageSize = 250) {
             try {
