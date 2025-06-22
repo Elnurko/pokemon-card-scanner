@@ -608,14 +608,13 @@
         const allCards = [];
         let page = 1;
         const pageSize = 250;
-        const yearQuery = "set.releaseDate:[2017-01-01 TO 2024-12-31]";
         const maxCards = 20000; // Increase as needed
 
         debugLog('Starting to fetch all recent cards with date query');
 
         while (allCards.length < maxCards) {
             try {
-                const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(yearQuery)}&page=${page}&pageSize=${pageSize}`;
+               const url = `https://api.pokemontcg.io/v2/cards?page=${page}&pageSize=${pageSize}`;
                 showLoading(`📦 Loading cards page ${page}...`);
                 debugLog('Fetching from URL: ' + url);
 
