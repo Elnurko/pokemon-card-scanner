@@ -601,46 +601,61 @@
             // Sort matches by similarity score
             matches.sort((a, b) => b.similarity - a.similarity);
             
-            return matches.slice(0, 8); // Return top 8 matches
+           return matches.slice(0, 20); // Return top 20 matches
         }
 
-        async function fetchAllRecentCards() {
-            const allCards = [];
-            let processedSets = 0;
-            const setsToProcess = recentSetIds.slice(0, 6); // Reduced to 6 sets for better performance
+       async function fetchAllRecentCards() {
+    const allCards = [];
+    let page = 1;
+    const pageSize = 250;
+    const yearQuery = "set.releaseDate:[2017-01-01 TO 2024-12-31]";
+    
+    debugLog('Starting to fetch all recent cards with date query');
+    
+    while (allCards.length < 5000) { // Limit to prevent infinite loop
+        try {
+            const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(yearQuery)}&page=${page}&pageSize=${pageSize}`;
+            showLoading(`📦 Loading cards page ${page}...`);
+            debugLog('Fetching from URL: ' + url);
             
-            debugLog('Starting to fetch cards from ' + setsToProcess.length + ' sets');
+            const response = await fetch(url, {
+                headers: { 'X-Api-Key': API_KEY }
+            });
             
-            for (const setId of setsToProcess) {
-                try {
-                    showLoading(`📦 Loading cards from set ${setId}...`);
-                    debugLog('Fetching cards from set: ' + setId);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.data && data.data.length > 0) {
+                    allCards.push(...data.data);
+                    debugLog(`Page ${page}: ${data.data.length} cards (Total: ${allCards.length})`);
                     
-                    const cards = await fetchCardsFromSet(setId);
-                    allCards.push(...cards);
-                    debugLog('Set ' + setId + ' returned ' + cards.length + ' cards');
-                    
-                    processedSets++;
-                    const progress = 40 + (processedSets / setsToProcess.length) * 30;
+                    totalCardsAnalyzed = allCards.length;
+                    const progress = 40 + Math.min((allCards.length / 3000) * 30, 30);
                     updateProcessingStep(4, progress);
                     
-                    totalCardsAnalyzed += cards.length;
-                    
-                    // Add delay to prevent rate limiting
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                } catch (error) {
-                    const errorMsg = `Error fetching cards from set ${setId}: ${error.message}`;
-                    console.error(errorMsg);
-                    debugLog(errorMsg);
+                    if (data.data.length < pageSize) {
+                        break; // No more cards
+                    }
+                    page++;
+                } else {
+                    break;
                 }
+            } else {
+                throw new Error(`HTTP ${response.status}`);
             }
             
-            debugLog('Finished fetching cards. Total: ' + allCards.length);
-            return allCards;
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+        } catch (error) {
+            debugLog(`Error fetching cards page ${page}: ${error.message}`);
+            break;
         }
+    }
+    
+    debugLog('Finished fetching cards. Total: ' + allCards.length);
+    return allCards;
+}
 
-        async function fetchCardsFromSet(setId, pageSize = 100) {
+       async function fetchCardsFromSet(setId, pageSize = 250) {
             try {
                 const url = `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=${pageSize}`;
                 debugLog('Fetching from URL: ' + url);
