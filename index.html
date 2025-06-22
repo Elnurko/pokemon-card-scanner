@@ -604,56 +604,70 @@
            return matches.slice(0, 20); // Return top 20 matches
         }
 
-       async function fetchAllRecentCards() {
-    const allCards = [];
-    let page = 1;
-    const pageSize = 250;
-    const yearQuery = "set.releaseDate:[2017-01-01 TO 2024-12-31]";
-    
-    debugLog('Starting to fetch all recent cards with date query');
-    
-    while (allCards.length < 5000) { // Limit to prevent infinite loop
-        try {
-            const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(yearQuery)}&page=${page}&pageSize=${pageSize}`;
-            showLoading(`📦 Loading cards page ${page}...`);
-            debugLog('Fetching from URL: ' + url);
-            
-            const response = await fetch(url, {
-                headers: { 'X-Api-Key': API_KEY }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.data && data.data.length > 0) {
-                    allCards.push(...data.data);
-                    debugLog(`Page ${page}: ${data.data.length} cards (Total: ${allCards.length})`);
-                    
-                    totalCardsAnalyzed = allCards.length;
-                    const progress = 40 + Math.min((allCards.length / 3000) * 30, 30);
-                    updateProcessingStep(4, progress);
-                    
-                    if (data.data.length < pageSize) {
-                        break; // No more cards
+        async function fetchAllRecentCards() {
+        const allCards = [];
+        let page = 1;
+        const pageSize = 250;
+        const yearQuery = "set.releaseDate:[2017-01-01 TO 2024-12-31]";
+        const maxCards = 20000; // Increase as needed
+
+        debugLog('Starting to fetch all recent cards with date query');
+
+        while (allCards.length < maxCards) {
+            try {
+                const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(yearQuery)}&page=${page}&pageSize=${pageSize}`;
+                showLoading(`📦 Loading cards page ${page}...`);
+                debugLog('Fetching from URL: ' + url);
+
+                const response = await fetch(url, {
+                    headers: { 'X-Api-Key': API_KEY }
+                });
+
+                if (response.status === 429) {
+                    // Rate limit hit, wait and retry
+                    debugLog("API rate limit hit, waiting 6 seconds before retry...");
+                    showLoading("⏳ API rate limit hit, waiting 6 seconds before retrying...");
+                    await new Promise(resolve => setTimeout(resolve, 6000));
+                    continue; // retry same page
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        allCards.push(...data.data);
+                        debugLog(`Page ${page}: ${data.data.length} cards (Total: ${allCards.length})`);
+
+                        totalCardsAnalyzed = allCards.length;
+                        const progress = 40 + Math.min((allCards.length / maxCards) * 30, 30);
+                        updateProcessingStep(4, progress);
+
+                        if (data.data.length < pageSize) {
+                            debugLog("API returned less than pageSize, assuming end of results.");
+                            break; // No more cards
+                        }
+                        page++;
+                    } else {
+                        debugLog("API returned no data, assuming end of results.");
+                        break;
                     }
-                    page++;
                 } else {
+                    debugLog(`HTTP error (status ${response.status}), aborting fetch loop.`);
                     break;
                 }
-            } else {
-                throw new Error(`HTTP ${response.status}`);
+
+                // Throttle requests to avoid rate limits
+                await new Promise(resolve => setTimeout(resolve, 250));
+            } catch (error) {
+                debugLog(`Error fetching cards page ${page}: ${error.message}`);
+                // If error is network or recoverable, retry; otherwise, break
+                await new Promise(resolve => setTimeout(resolve, 2500));
+                continue;
             }
-            
-            await new Promise(resolve => setTimeout(resolve, 200));
-            
-        } catch (error) {
-            debugLog(`Error fetching cards page ${page}: ${error.message}`);
-            break;
         }
+
+        debugLog('Finished fetching cards. Total: ' + allCards.length);
+        return allCards;
     }
-    
-    debugLog('Finished fetching cards. Total: ' + allCards.length);
-    return allCards;
-}
 
        async function fetchCardsFromSet(setId, pageSize = 250) {
             try {
