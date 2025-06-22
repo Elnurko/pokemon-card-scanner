@@ -576,42 +576,95 @@
             const baseUrl = 'https://api.pokemontcg.io/v2/cards';
             const headers = { 'X-Api-Key': POKEMON_API_KEY };
             
-            // Multiple search strategies
+            // Comprehensive search strategies
             const searchQueries = [
-                // Search by type if detected
+                // Search by detected type
                 features.cardType !== 'colorless' ? `types:${features.cardType}` : '',
-                // Search recent sets
-                'set.releaseDate:[2018/01/01 TO 2025/12/31]',
-                // Popular recent sets
+                
+                // Special card types (based on visual patterns)
+                'subtypes:"GX"',
+                'subtypes:"EX"', 
+                'subtypes:"V"',
+                'subtypes:"VMAX"',
+                'subtypes:"Tag Team"',
+                'subtypes:"Ultra Rare"',
+                
+                // Popular Pokemon that appear in psychic/colorful cards
+                'name:"Mewtwo"',
+                'name:"Mew"',
+                'name:"Lugia"',
+                'name:"Ho-Oh"',
+                'name:"Rayquaza"',
+                'name:"Dialga"',
+                'name:"Palkia"',
+                'name:"Giratina"',
+                'name:"Arceus"',
+                
+                // Recent sets with high-value cards
+                'set.series:"Sun & Moon"',
                 'set.series:"Sword & Shield"',
                 'set.series:"Scarlet & Violet"',
-                // Specific recent sets
-                'set.name:"Battle Styles" OR set.name:"Chilling Reign" OR set.name:"Evolving Skies"',
-                'set.name:"Fusion Strike" OR set.name:"Brilliant Stars" OR set.name:"Astral Radiance"',
-                'set.name:"Lost Origin" OR set.name:"Silver Tempest" OR set.name:"Crown Zenith"'
+                
+                // Specific valuable sets
+                'set.name:"Unified Minds"',
+                'set.name:"Cosmic Eclipse"',
+                'set.name:"Team Up"',
+                'set.name:"Unbroken Bonds"',
+                'set.name:"Hidden Fates"',
+                'set.name:"Champion\'s Path"',
+                'set.name:"Battle Styles"',
+                'set.name:"Chilling Reign"',
+                'set.name:"Evolving Skies"',
+                'set.name:"Celebrations"',
+                'set.name:"Fusion Strike"',
+                'set.name:"Brilliant Stars"',
+                'set.name:"Astral Radiance"',
+                'set.name:"Pokémon GO"',
+                'set.name:"Lost Origin"',
+                'set.name:"Silver Tempest"',
+                
+                // Rarity-based searches
+                'rarity:"Rare Holo GX"',
+                'rarity:"Ultra Rare"',
+                'rarity:"Secret Rare"',
+                'rarity:"Rare Rainbow"',
+                
+                // High HP cards (often special cards)
+                'hp:[200 TO *]',
+                
+                // Recent date range
+                'set.releaseDate:[2018/01/01 TO 2025/12/31]'
             ].filter(q => q.length > 0);
 
             let allCards = [];
             
-            for (let query of searchQueries) {
+            // Execute searches with delay to avoid rate limits
+            for (let i = 0; i < searchQueries.length; i++) {
+                const query = searchQueries[i];
                 try {
-                    const url = `${baseUrl}?q=${encodeURIComponent(query)}&pageSize=50`;
+                    const url = `${baseUrl}?q=${encodeURIComponent(query)}&pageSize=100`;
                     const response = await fetch(url, { headers });
                     const data = await response.json();
                     
                     if (data.data && data.data.length > 0) {
                         allCards.push(...data.data);
                     }
+                    
+                    // Small delay between requests
+                    if (i < searchQueries.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
                 } catch (err) {
                     console.error('Search error:', err);
                 }
             }
 
-            // Remove duplicates and filter for recent cards
+            // Remove duplicates
             const uniqueCards = allCards.filter((card, index, self) => 
                 index === self.findIndex(c => c.id === card.id)
             );
 
+            // Filter for cards from 2018-2025
             const recentCards = uniqueCards.filter(card => {
                 const releaseDate = card.set.releaseDate;
                 if (releaseDate) {
@@ -621,12 +674,52 @@
                 return true;
             });
 
+            // Score cards based on visual features
+            const scoredCards = recentCards.map(card => {
+                let score = 0;
+                
+                // Boost score for psychic-type cards if purple/pink detected
+                if (features.cardType === 'psychic' && 
+                    (card.types && card.types.includes('Psychic'))) {
+                    score += 10;
+                }
+                
+                // Boost score for high-value card types
+                if (card.subtypes) {
+                    if (card.subtypes.includes('GX')) score += 8;
+                    if (card.subtypes.includes('Tag Team')) score += 15;
+                    if (card.subtypes.includes('V')) score += 6;
+                    if (card.subtypes.includes('VMAX')) score += 7;
+                }
+                
+                // Boost score for high HP (often special cards)
+                if (card.hp && parseInt(card.hp) >= 200) {
+                    score += 5;
+                }
+                
+                // Boost score for ultra rare cards
+                if (card.rarity && card.rarity.includes('Ultra Rare')) {
+                    score += 3;
+                }
+                
+                return { ...card, score };
+            });
+
+            // Sort by score and return top candidates
+            const topCards = scoredCards
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 20);
+
             // Show debug info
-            debugInfo.innerHTML = `Found ${recentCards.length} potential matches. Dominant colors: ${features.colors.map(c => `rgb(${c.join(',')})`).join(', ')}. Detected type: ${features.cardType}`;
+            debugInfo.innerHTML = `
+                Found ${uniqueCards.length} total cards, showing top ${topCards.length} matches.<br>
+                Dominant colors: ${features.colors.map(c => `rgb(${c.join(',')})`).join(', ')}<br>
+                Detected type: ${features.cardType}<br>
+                Search queries executed: ${searchQueries.length}
+            `;
             debugInfo.style.display = 'block';
 
-            // Return top 12 most likely candidates
-            return recentCards.slice(0, 12);
+            return topCards;
         }
 
         function displayCandidates(cards) {
