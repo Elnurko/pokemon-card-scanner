@@ -227,6 +227,9 @@
         <div id="results"></div>
     </div>
     
+    <!-- Tesseract.js for OCR -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js'></script>
+    
     <script>
         const API_KEY = '87594ae3-ce17-4d7f-9ed6-782dee542ac7';
         const fileInput = document.getElementById('fileInput');
@@ -381,142 +384,255 @@
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             document.querySelector('.canvas-container').style.display = 'block';
 
-            // Get image data for analysis
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            
-            // Simulate text detection with pattern matching
-            // In a real implementation, you'd use OCR or computer vision APIs
-            const detectedInfo = await simulateTextDetection(imageData, img);
+            // Use actual OCR to read text from the card
+            const detectedInfo = await performOCRAnalysis(canvas);
             
             return detectedInfo;
         }
 
-        async function simulateTextDetection(imageData, img) {
-            // This simulates what an OCR/computer vision system would do
+        async function performOCRAnalysis(canvas) {
             const result = {
                 pokemonName: null,
                 confidence: 0,
                 detectedText: [],
-                colors: [],
+                rawOCRText: '',
                 possibleMatches: []
             };
 
-            // Analyze dominant colors (simplified)
-            const colors = analyzeColors(imageData);
-            result.colors = colors;
-
-            // Simulate finding Pokemon names based on image characteristics
-            // In reality, this would use actual OCR
-            const simulatedDetection = await simulateSmartDetection(colors, img);
-            
-            result.pokemonName = simulatedDetection.name;
-            result.confidence = simulatedDetection.confidence;
-            result.detectedText = simulatedDetection.detectedText;
-            result.possibleMatches = simulatedDetection.possibleMatches;
-
-            return result;
-        }
-
-        function analyzeColors(imageData) {
-            const data = imageData.data;
-            const colorCounts = {};
-            
-            // Sample every 10th pixel for performance
-            for (let i = 0; i < data.length; i += 40) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
+            try {
+                showLoading('🔍 Reading text from card using OCR...');
                 
-                // Group similar colors
-                const colorKey = `${Math.floor(r/32)*32},${Math.floor(g/32)*32},${Math.floor(b/32)*32}`;
-                colorCounts[colorKey] = (colorCounts[colorKey] || 0) + 1;
+                // Use Tesseract.js to perform OCR on the canvas
+                const { data: { text, confidence } } = await Tesseract.recognize(canvas, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            showLoading(`🔍 OCR Progress: ${Math.round(m.progress * 100)}%`);
+                        }
+                    }
+                });
+
+                result.rawOCRText = text;
+                result.detectedText = text.split('\n').filter(line => line.trim().length > 0);
+                
+                // Extract Pokemon name from OCR text
+                const pokemonInfo = extractPokemonFromText(text);
+                result.pokemonName = pokemonInfo.name;
+                result.confidence = pokemonInfo.confidence;
+                result.possibleMatches = pokemonInfo.matches;
+
+                return result;
+                
+            } catch (error) {
+                console.error('OCR failed:', error);
+                result.detectedText = ['OCR failed - using fallback detection'];
+                
+                // Fallback to basic image analysis if OCR fails
+                return await fallbackDetection(canvas);
             }
-            
-            return Object.entries(colorCounts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 5)
-                .map(([color]) => color);
         }
 
-        async function simulateSmartDetection(colors, img) {
-            // This simulates intelligent card detection
-            // In reality, you'd use machine learning models trained on Pokemon cards
-            
+        function extractPokemonFromText(ocrText) {
             const result = {
                 name: null,
                 confidence: 0,
-                detectedText: ['Pokemon Card Text Detection (Simulated)', 'HP: 70', 'Type: Lightning', 'Rarity: Common'],
-                possibleMatches: []
+                matches: []
             };
 
-            // Simple heuristic based on colors and common patterns
-            const colorBasedGuesses = {
-                '224,224,0': 'pikachu', // Yellow
-                '255,128,0': 'charizard', // Orange/Red
-                '0,128,255': 'blastoise', // Blue
-                '0,255,0': 'venusaur', // Green
-                '128,0,255': 'gengar', // Purple
-                '255,192,203': 'mew' // Pink
-            };
+            if (!ocrText || ocrText.trim().length === 0) {
+                return result;
+            }
 
-            // Check dominant colors for matches
-            for (const color of colors) {
-                if (colorBasedGuesses[color]) {
-                    result.name = colorBasedGuesses[color];
-                    result.confidence = 75;
-                    break;
+            // Convert to lowercase for matching
+            const textLower = ocrText.toLowerCase();
+            const lines = textLower.split('\n').map(line => line.trim());
+            
+            // Common Pokemon names to look for (expanded list)
+            const pokemonNames = [
+                'pikachu', 'charizard', 'blastoise', 'venusaur', 'alakazam', 'machamp', 'gengar', 'dragonite',
+                'mewtwo', 'mew', 'typhlosion', 'feraligatr', 'meganium', 'lugia', 'ho-oh', 'celebi',
+                'sceptile', 'blaziken', 'swampert', 'rayquaza', 'kyogre', 'groudon', 'dialga', 'palkia',
+                'giratina', 'arceus', 'reshiram', 'zekrom', 'kyurem', 'xerneas', 'yveltal', 'zygarde',
+                'solgaleo', 'lunala', 'necrozma', 'zacian', 'zamazenta', 'eternatus', 'koraidon', 'miraidon',
+                // Ice types (since you mentioned Chien-Pao)
+                'chien-pao', 'chienpao', 'articuno', 'lapras', 'jynx', 'dewgong', 'cloyster', 'glaceon',
+                'froslass', 'abomasnow', 'weavile', 'mamoswine', 'kyurem', 'cryogonal', 'beartic',
+                'vanilluxe', 'avalugg', 'alolan sandslash', 'alolan ninetales', 'frosmoth', 'eiscue',
+                'arctozolt', 'arctovish', 'regice', 'glastrier', 'chien pao'
+            ];
+
+            // Look for exact matches first
+            for (const pokemon of pokemonNames) {
+                // Check if the Pokemon name appears in any line
+                for (const line of lines) {
+                    if (line.includes(pokemon) || line.replace(/[^a-z]/g, '').includes(pokemon.replace(/[^a-z]/g, ''))) {
+                        result.matches.push({
+                            name: pokemon,
+                            confidence: 90,
+                            foundIn: line
+                        });
+                    }
+                }
+                
+                // Also check the full text
+                if (textLower.includes(pokemon)) {
+                    if (!result.matches.find(m => m.name === pokemon)) {
+                        result.matches.push({
+                            name: pokemon,
+                            confidence: 85,
+                            foundIn: 'full text'
+                        });
+                    }
                 }
             }
 
-            // If no color match, pick a random popular Pokemon for demo
-            if (!result.name) {
-                const commonPokemon = ['pikachu', 'charizard', 'blastoise', 'venusaur', 'mewtwo'];
-                result.name = commonPokemon[Math.floor(Math.random() * commonPokemon.length)];
-                result.confidence = 45;
-                result.detectedText.push('Note: Using pattern-based detection');
+            // Look for partial matches with fuzzy matching
+            for (const pokemon of pokemonNames) {
+                for (const line of lines) {
+                    const similarity = calculateSimilarity(line.replace(/[^a-z]/g, ''), pokemon.replace(/[^a-z]/g, ''));
+                    if (similarity > 0.7 && !result.matches.find(m => m.name === pokemon)) {
+                        result.matches.push({
+                            name: pokemon,
+                            confidence: Math.round(similarity * 80),
+                            foundIn: line
+                        });
+                    }
+                }
             }
 
-            // Add some realistic delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Sort matches by confidence and pick the best one
+            result.matches.sort((a, b) => b.confidence - a.confidence);
+            
+            if (result.matches.length > 0) {
+                const bestMatch = result.matches[0];
+                result.name = bestMatch.name;
+                result.confidence = bestMatch.confidence;
+            }
 
             return result;
+        }
+
+        function calculateSimilarity(str1, str2) {
+            const longer = str1.length > str2.length ? str1 : str2;
+            const shorter = str1.length > str2.length ? str2 : str1;
+            
+            if (longer.length === 0) return 1.0;
+            
+            const editDistance = levenshteinDistance(longer, shorter);
+            return (longer.length - editDistance) / longer.length;
+        }
+
+        function levenshteinDistance(str1, str2) {
+            const matrix = [];
+            
+            for (let i = 0; i <= str2.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= str1.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= str2.length; i++) {
+                for (let j = 1; j <= str1.length; j++) {
+                    if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            
+            return matrix[str2.length][str1.length];
+        }
+
+        async function fallbackDetection(canvas) {
+            // Simple fallback if OCR completely fails
+            return {
+                pokemonName: null,
+                confidence: 0,
+                detectedText: ['Unable to read text clearly', 'Try better lighting or angle'],
+                rawOCRText: '',
+                possibleMatches: []
+            };
         }
 
         function showSearchFallback(detectedInfo) {
             let html = `
                 <div class="results">
-                    <h3>🤖 Auto-Detection Results</h3>
+                    <h3>🤖 OCR Analysis Results</h3>
                     <div class="detected-text">
-                        <strong>Detected Information:</strong><br>
-                        ${detectedInfo.detectedText.join('<br>')}
+                        <strong>Raw Text Detected:</strong><br>
+                        ${detectedInfo.rawOCRText ? detectedInfo.rawOCRText.replace(/\n/g, '<br>') : 'No clear text detected'}
                     </div>
             `;
 
+            if (detectedInfo.possibleMatches && detectedInfo.possibleMatches.length > 0) {
+                html += `<h4>🎯 Possible Matches Found:</h4>`;
+                detectedInfo.possibleMatches.slice(0, 3).forEach(match => {
+                    html += `
+                        <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                            <strong>${match.name}</strong> 
+                            <span class="match-score">${match.confidence}% confident</span>
+                            <br><small>Found in: "${match.foundIn}"</small>
+                            <button onclick="searchSpecificPokemon('${match.name}')" style="float: right; padding: 5px 10px; font-size: 12px;">Search This</button>
+                        </div>
+                    `;
+                });
+            }
+
             if (detectedInfo.pokemonName) {
                 html += `
-                    <p>🎯 <strong>Best Guess:</strong> ${detectedInfo.pokemonName}</p>
+                    <p>🎯 <strong>Best Match:</strong> ${detectedInfo.pokemonName}</p>
                     <div class="confidence-meter">
                         <div class="confidence-bar" style="width: ${detectedInfo.confidence}%"></div>
                     </div>
                     <p>Confidence: ${detectedInfo.confidence}%</p>
                 `;
-            }
-
-            html += `
+            } else {
+                html += `
                     <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                        <h4>🔧 Detection couldn't find a clear match</h4>
+                        <h4>🔧 No Pokemon name clearly detected</h4>
                         <p>This could be due to:</p>
                         <ul>
-                            <li>Image quality or angle</li>
-                            <li>Card condition or lighting</li>
-                            <li>Uncommon or newer card not in pattern database</li>
+                            <li>Poor image quality or lighting</li>
+                            <li>Card text too small or blurry</li>
+                            <li>Unusual font or damaged card</li>
+                            <li>Card held at an angle</li>
                         </ul>
-                        <p><strong>Try the manual search below with the Pokemon name visible on the card.</strong></p>
+                        <p><strong>Tips for better detection:</strong></p>
+                        <ul>
+                            <li>Hold the card flat and straight</li>
+                            <li>Ensure good lighting</li>
+                            <li>Keep the camera steady</li>
+                            <li>Fill the frame with the card</li>
+                        </ul>
+                        <p><strong>Or use manual search below with the Pokemon name from the card.</strong></p>
                     </div>
-                </div>
-            `;
+                `;
+            }
 
+            html += '</div>';
             results.innerHTML = html;
+        }
+
+        // Add function to search for specific Pokemon from detected matches
+        async function searchSpecificPokemon(pokemonName) {
+            showLoading(`🔍 Searching for ${pokemonName}...`);
+            
+            try {
+                const cards = await searchPokemonCards(pokemonName);
+                if (cards && cards.length > 0) {
+                    displayResults(cards, pokemonName, { confidence: 85, detectedText: [`OCR detected: ${pokemonName}`] });
+                } else {
+                    showError(`No cards found for "${pokemonName}". This might be a detection error.`);
+                }
+            } catch (error) {
+                showError('Search failed: ' + error.message);
+            }
         }
 
         async function testApiAccess() {
