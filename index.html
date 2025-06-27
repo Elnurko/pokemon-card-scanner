@@ -280,7 +280,7 @@
                     <option value="Fire">Fire</option>
                     <option value="Water">Water</option>
                     <option value="Grass">Grass</option>
-                    <option value="Electric">Electric</option>
+                    <option value="Lightning">Lightning</option>
                     <option value="Psychic">Psychic</option>
                     <option value="Fighting">Fighting</option>
                     <option value="Darkness">Darkness</option>
@@ -331,31 +331,31 @@
         const API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
         const API_BASE_URL = 'https://api.pokemontcg.io/v2';
 
-        // Load initial cards on page load
+        // Global variables
+        let currentCards = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentQuery = '';
+        let pageSize = 50;
+        let sortBy = 'set.releaseDate';
+
+        // Load initial content on page load
         window.addEventListener('load', async () => {
-            await loadSets(); // Load sets for filter dropdown
+            await loadSets();
             loadRandomCards();
         });
 
-        // Add enter key support for search
+        // Add event listeners
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 searchCards(1);
             }
         });
 
-        // Add filter change listeners
         document.getElementById('typeFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('rarityFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('setFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('sortFilter').addEventListener('change', () => searchCards(1));
-
-        let currentCards = [];
-        let currentPage = 1;
-        let totalPages = 1;
-        let currentQuery = '';
-        let pageSize = 50; // Increased from 20
-        let sortBy = 'set.releaseDate'; // Default sort by set release date
 
         async function loadSets() {
             try {
@@ -381,12 +381,6 @@
             }
         }
 
-        let currentPage = 1;
-        let totalPages = 1;
-        let currentQuery = '';
-        let pageSize = 50; // Increased from 20
-        let sortBy = 'set.releaseDate'; // Default sort by set release date
-
         async function searchCards(page = 1) {
             const searchTerm = document.getElementById('searchInput').value.trim();
             const typeFilter = document.getElementById('typeFilter').value;
@@ -403,21 +397,23 @@
             try {
                 const filters = [];
 
+                // Build query filters
                 if (searchTerm) {
-                    filters.push(`name:*${searchTerm}*`);
+                    filters.push(`name:${searchTerm}`);
                 }
                 if (typeFilter) {
                     filters.push(`types:${typeFilter}`);
                 }
                 if (rarityFilter) {
-                    filters.push(`rarity:${rarityFilter}`);
+                    filters.push(`rarity:"${rarityFilter}"`);
                 }
                 if (setFilter) {
                     filters.push(`set.id:${setFilter}`);
                 }
 
-                currentQuery = filters.length > 0 ? filters.join(' ') : '';
+                currentQuery = filters.length > 0 ? filters.join(' AND ') : '';
                 
+                // Build URL parameters
                 const params = new URLSearchParams();
                 if (currentQuery) {
                     params.append('q', currentQuery);
@@ -426,6 +422,8 @@
                 params.append('pageSize', pageSize.toString());
                 params.append('orderBy', sortBy);
 
+                console.log('Searching with query:', currentQuery); // Debug log
+
                 const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
                     headers: {
                         'X-Api-Key': API_KEY
@@ -433,22 +431,29 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
                 }
 
                 const data = await response.json();
                 currentCards = data.data || [];
                 
-                // Calculate total pages from response (estimate since API doesn't return totalCount)
-                totalPages = currentCards.length === pageSize ? Math.min(page + 10, 100) : page;
+                // Better pagination handling
+                const hasNextPage = currentCards.length === pageSize;
+                if (hasNextPage && page === 1) {
+                    totalPages = Math.min(20, 100); // Estimate reasonable max pages
+                } else if (!hasNextPage) {
+                    totalPages = page;
+                } else {
+                    totalPages = Math.max(totalPages, page + 1);
+                }
                 
                 displayCards(currentCards);
-                updateStats(currentCards.length, currentCards.length);
+                updateStats(currentCards.length);
                 updatePagination();
 
             } catch (error) {
                 console.error('Search error:', error);
-                showError('Failed to search cards. Please try again.');
+                showError(`Failed to search cards: ${error.message}`);
             } finally {
                 showLoading(false);
             }
@@ -459,8 +464,9 @@
             hideError();
 
             try {
+                const randomPage = Math.floor(Math.random() * 10) + 1;
                 const params = new URLSearchParams();
-                params.append('page', Math.floor(Math.random() * 10) + 1);
+                params.append('page', randomPage.toString());
                 params.append('pageSize', pageSize.toString());
                 params.append('orderBy', 'set.releaseDate');
 
@@ -471,15 +477,16 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
                 }
 
                 const data = await response.json();
                 currentCards = data.data || [];
+                currentPage = 1;
                 totalPages = currentCards.length === pageSize ? 20 : 1;
                 
                 displayCards(currentCards);
-                updateStats(currentCards.length, currentCards.length);
+                updateStats(currentCards.length);
                 updatePagination();
 
             } catch (error) {
@@ -494,23 +501,23 @@
             const container = document.getElementById('cardsContainer');
             
             if (!cards || cards.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: white; font-size: 18px; grid-column: 1/-1;">No cards found. Try a different search term.</div>';
+                container.innerHTML = '<div style="text-align: center; color: white; font-size: 18px; grid-column: 1/-1; padding: 40px;">No cards found. Try a different search term or adjust your filters.</div>';
                 return;
             }
 
             container.innerHTML = cards.map(card => `
                 <div class="card" onclick="showCardDetails('${card.id}')">
                     <img src="${card.images?.small || 'https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'}" 
-                         alt="${card.name}" 
+                         alt="${card.name || 'Unknown Card'}" 
                          class="card-image"
                          onerror="this.src='https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'">
                     <div class="card-info">
                         <div class="card-name">${card.name || 'Unknown Card'}</div>
                         <div class="card-details">
                             ${card.supertype ? `<div><strong>Type:</strong> ${card.supertype}</div>` : ''}
-                            ${card.subtypes ? `<div><strong>Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
+                            ${card.subtypes && card.subtypes.length ? `<div><strong>Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
                             ${card.hp ? `<div><strong>HP:</strong> ${card.hp}</div>` : ''}
-                            ${card.types ? `<div><strong>Element:</strong> ${card.types.join(', ')}</div>` : ''}
+                            ${card.types && card.types.length ? `<div><strong>Element:</strong> ${card.types.join(', ')}</div>` : ''}
                         </div>
                         ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
                         ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
@@ -522,16 +529,26 @@
         function showCardDetails(cardId) {
             const card = currentCards.find(c => c.id === cardId);
             if (card) {
-                alert(`Card: ${card.name}\nSet: ${card.set?.name || 'Unknown'}\nRarity: ${card.rarity || 'Unknown'}\nHP: ${card.hp || 'N/A'}\nTypes: ${card.types?.join(', ') || 'Unknown'}`);
+                const details = [
+                    `Card: ${card.name}`,
+                    `Set: ${card.set?.name || 'Unknown'}`,
+                    `Rarity: ${card.rarity || 'Unknown'}`,
+                    `HP: ${card.hp || 'N/A'}`,
+                    `Types: ${card.types?.join(', ') || 'Unknown'}`,
+                    card.artist ? `Artist: ${card.artist}` : '',
+                    card.flavorText ? `Flavor Text: ${card.flavorText}` : ''
+                ].filter(Boolean).join('\n');
+                
+                alert(details);
             }
         }
 
-        function updateStats(totalCount, currentCount) {
+        function updateStats(currentCount) {
             const statsElement = document.getElementById('stats');
             const countElement = document.getElementById('cardCount');
             
-            countElement.innerHTML = `Showing ${currentCount} cards (Page ${currentPage})`;
-            statsElement.style.display = totalCount > 0 ? 'block' : 'none';
+            countElement.innerHTML = `Showing ${currentCount} cards (Page ${currentPage}${totalPages > 1 ? ` of ~${totalPages}` : ''})`;
+            statsElement.style.display = currentCount > 0 ? 'block' : 'none';
         }
 
         function updatePagination() {
@@ -553,7 +570,7 @@
                 // Previous button
                 if (currentPage > 1) {
                     const prevBtn = document.createElement('button');
-                    prevBtn.textContent = '« Previous';
+                    prevBtn.textContent = '← Previous';
                     prevBtn.className = 'pagination-btn';
                     prevBtn.onclick = () => searchCards(currentPage - 1);
                     paginationContainer.appendChild(prevBtn);
@@ -604,7 +621,7 @@
                 // Next button
                 if (currentPage < totalPages) {
                     const nextBtn = document.createElement('button');
-                    nextBtn.textContent = 'Next »';
+                    nextBtn.textContent = 'Next →';
                     nextBtn.className = 'pagination-btn';
                     nextBtn.onclick = () => searchCards(currentPage + 1);
                     paginationContainer.appendChild(nextBtn);
