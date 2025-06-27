@@ -12,36 +12,68 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
             min-height: 100vh;
             color: #333;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(255,255,255,0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             color: white;
         }
 
         .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #fff, #e3f2fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
         .search-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         .search-box {
@@ -54,33 +86,43 @@
         .search-input {
             flex: 1;
             min-width: 250px;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            padding: 15px 20px;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
             font-size: 16px;
             transition: all 0.3s ease;
+            background: rgba(255,255,255,0.9);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .search-input:focus {
             border-color: #667eea;
             outline: none;
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), inset 0 2px 4px rgba(0,0,0,0.05);
+            transform: translateY(-1px);
         }
 
         .search-btn {
-            padding: 12px 25px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .search-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+        }
+
+        .search-btn:active {
+            transform: translateY(0);
         }
 
         .filters {
@@ -92,10 +134,25 @@
         }
 
         .filter-select {
-            padding: 8px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
             font-size: 14px;
+            background: rgba(255,255,255,0.9);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .filter-select:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-select:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
         }
 
         .loading {
@@ -107,68 +164,107 @@
 
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
             margin-top: 20px;
         }
 
         .card {
-            background: white;
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         .card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2), 0 0 0 1px rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.3);
         }
 
         .card-image {
             width: 100%;
-            height: 300px;
+            height: 320px;
             object-fit: cover;
-            background: #f5f5f5;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover .card-image {
+            transform: scale(1.05);
         }
 
         .card-info {
-            padding: 15px;
+            padding: 20px;
+            background: rgba(255,255,255,0.9);
         }
 
         .card-name {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #2c3e50;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         .card-details {
             font-size: 14px;
-            color: #666;
+            color: #5a6c7d;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .card-details div {
+            margin-bottom: 4px;
+        }
+
+        .card-description {
+            font-size: 13px;
+            color: #7f8c8d;
             line-height: 1.4;
+            margin-top: 8px;
+            font-style: italic;
+            max-height: 60px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
         }
 
         .card-set {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 4px 8px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: #1565c0;
+            padding: 6px 12px;
+            border-radius: 15px;
             font-size: 12px;
+            font-weight: 600;
             display: inline-block;
-            margin-top: 8px;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(21, 101, 192, 0.2);
         }
 
         .card-rarity {
-            background: #fff3e0;
-            color: #f57c00;
-            padding: 4px 8px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #fff3e0, #ffcc02);
+            color: #e65100;
+            padding: 6px 12px;
+            border-radius: 15px;
             font-size: 12px;
+            font-weight: 600;
             display: inline-block;
-            margin-top: 8px;
-            margin-left: 5px;
+            margin-top: 10px;
+            margin-left: 8px;
+            box-shadow: 0 2px 8px rgba(230, 81, 0, 0.2);
+        }
+
+        .card-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
         }
 
         .error {
@@ -181,12 +277,16 @@
         }
 
         .stats {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            font-weight: 600;
+            color: #2c3e50;
         }
 
         .pagination {
@@ -199,27 +299,31 @@
         }
 
         .pagination-btn {
-            padding: 10px 15px;
-            border: 2px solid #667eea;
-            background: white;
+            padding: 12px 18px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            background: rgba(255, 255, 255, 0.9);
             color: #667eea;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 600;
             transition: all 0.3s ease;
-            min-width: 40px;
+            min-width: 45px;
+            backdrop-filter: blur(10px);
         }
 
         .pagination-btn:hover {
             background: #667eea;
             color: white;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
         .pagination-btn.active {
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            font-weight: bold;
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
         .pagination-ellipsis {
@@ -301,11 +405,16 @@
                     <!-- Sets will be loaded dynamically -->
                 </select>
                 <select class="filter-select" id="sortFilter">
-                    <option value="set.releaseDate">Sort by Release Date</option>
-                    <option value="name">Sort by Name</option>
-                    <option value="number">Sort by Card Number</option>
-                    <option value="hp">Sort by HP</option>
-                    <option value="rarity">Sort by Rarity</option>
+                    <option value="set.releaseDate-desc">Release Date (Newest)</option>
+                    <option value="set.releaseDate-asc">Release Date (Oldest)</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="number-asc">Card Number (Low-High)</option>
+                    <option value="number-desc">Card Number (High-Low)</option>
+                    <option value="hp-desc">HP (High-Low)</option>
+                    <option value="hp-asc">HP (Low-High)</option>
+                    <option value="rarity-asc">Rarity (Common First)</option>
+                    <option value="rarity-desc">Rarity (Rare First)</option>
                 </select>
             </div>
         </div>
@@ -338,6 +447,27 @@
         let currentQuery = '';
         let pageSize = 20;
         let sortBy = 'set.releaseDate';
+        let sortOrder = 'desc';
+
+        // Fuzzy search function
+        function fuzzySearch(searchTerm) {
+            if (!searchTerm || searchTerm.length < 2) return searchTerm;
+            
+            // Remove spaces, hyphens, and make lowercase for fuzzy matching
+            const cleanTerm = searchTerm.toLowerCase().replace(/[\s\-_]/g, '');
+            
+            // If the term is very short, use exact matching
+            if (cleanTerm.length <= 3) {
+                return searchTerm;
+            }
+            
+            // Create a regex pattern that allows for missing characters
+            // This helps match "chienpao" to "chien-pao" or "chien pao"
+            const fuzzyPattern = cleanTerm.split('').join('.*?');
+            
+            // Use both exact term and fuzzy pattern
+            return `name:*${searchTerm}* OR name:/${fuzzyPattern}/i`;
+        }
 
         // Load initial cards on page load
         window.addEventListener('load', async () => {
@@ -390,8 +520,12 @@
             const sortFilter = document.getElementById('sortFilter').value;
 
             currentPage = page;
-            sortBy = sortFilter || 'set.releaseDate';
             
+            // Parse sort filter to extract field and order
+            const [field, order] = sortFilter.split('-');
+            sortBy = field || 'set.releaseDate';
+            sortOrder = order || 'desc';
+
             showLoading(true);
             hideError();
 
@@ -399,13 +533,15 @@
                 const filters = [];
 
                 if (searchTerm) {
-                    filters.push(`name:*${searchTerm}*`);
+                    // Use fuzzy search for better matching
+                    const fuzzyQuery = fuzzySearch(searchTerm);
+                    filters.push(`(${fuzzyQuery})`);
                 }
                 if (typeFilter) {
                     filters.push(`types:${typeFilter}`);
                 }
                 if (rarityFilter) {
-                    filters.push(`rarity:${rarityFilter}`);
+                    filters.push(`rarity:"${rarityFilter}"`);
                 }
                 if (setFilter) {
                     filters.push(`set.id:${setFilter}`);
@@ -419,7 +555,7 @@
                 }
                 params.append('page', page.toString());
                 params.append('pageSize', pageSize.toString());
-                params.append('orderBy', sortBy);
+                params.append('orderBy', `${sortBy}:${sortOrder}`);
 
                 const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
                     headers: {
@@ -458,7 +594,7 @@
                 const params = new URLSearchParams();
                 params.append('page', '1');
                 params.append('pageSize', pageSize.toString());
-                params.append('orderBy', 'set.releaseDate');
+                params.append('orderBy', `${sortBy}:${sortOrder}`);
 
                 const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
                     headers: {
@@ -492,35 +628,81 @@
             const container = document.getElementById('cardsContainer');
             
             if (!cards || cards.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: white; font-size: 18px; grid-column: 1/-1;">No cards found. Try a different search term.</div>';
+                container.innerHTML = `
+                    <div style="text-align: center; color: white; font-size: 18px; grid-column: 1/-1; padding: 40px;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">🎯</div>
+                        <div>No cards found. Try a different search term or adjust your filters.</div>
+                    </div>
+                `;
                 return;
             }
 
-            container.innerHTML = cards.map(card => `
-                <div class="card" onclick="showCardDetails('${card.id}')">
-                    <img src="${card.images?.small || 'https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'}" 
-                         alt="${card.name}" 
-                         class="card-image"
-                         onerror="this.src='https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'">
-                    <div class="card-info">
-                        <div class="card-name">${card.name || 'Unknown Card'}</div>
-                        <div class="card-details">
-                            ${card.supertype ? `<div><strong>Type:</strong> ${card.supertype}</div>` : ''}
-                            ${card.subtypes ? `<div><strong>Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
-                            ${card.hp ? `<div><strong>HP:</strong> ${card.hp}</div>` : ''}
-                            ${card.types ? `<div><strong>Element:</strong> ${card.types.join(', ')}</div>` : ''}
+            container.innerHTML = cards.map(card => {
+                const description = card.flavorText || 
+                                  (card.attacks && card.attacks[0] ? card.attacks[0].text : '') ||
+                                  (card.abilities && card.abilities[0] ? card.abilities[0].text : '') ||
+                                  'A mysterious Pokemon card with unique powers.';
+
+                return `
+                    <div class="card" onclick="showCardDetails('${card.id}')">
+                        <img src="${card.images?.small || 'https://via.placeholder.com/280x390/667eea/ffffff?text=Pokemon+Card'}" 
+                             alt="${card.name}" 
+                             class="card-image"
+                             onerror="this.src='https://via.placeholder.com/280x390/667eea/ffffff?text=Pokemon+Card'">
+                        <div class="card-info">
+                            <div class="card-name">${card.name || 'Unknown Card'}</div>
+                            <div class="card-details">
+                                ${card.supertype ? `<div><strong>Type:</strong> ${card.supertype}</div>` : ''}
+                                ${card.subtypes ? `<div><strong>Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
+                                ${card.hp ? `<div><strong>HP:</strong> ${card.hp}</div>` : ''}
+                                ${card.types ? `<div><strong>Element:</strong> ${card.types.join(', ')}</div>` : ''}
+                                ${card.artist ? `<div><strong>Artist:</strong> ${card.artist}</div>` : ''}
+                            </div>
+                            ${description ? `<div class="card-description">"${description}"</div>` : ''}
+                            <div class="card-badges">
+                                ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
+                                ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
+                            </div>
                         </div>
-                        ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
-                        ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function showCardDetails(cardId) {
             const card = currentCards.find(c => c.id === cardId);
             if (card) {
-                alert(`Card: ${card.name}\nSet: ${card.set?.name || 'Unknown'}\nRarity: ${card.rarity || 'Unknown'}\nHP: ${card.hp || 'N/A'}\nTypes: ${card.types?.join(', ') || 'Unknown'}`);
+                let details = `🎯 ${card.name}\n\n`;
+                
+                if (card.set) details += `📦 Set: ${card.set.name} (${card.set.releaseDate || 'Unknown'})\n`;
+                if (card.rarity) details += `✨ Rarity: ${card.rarity}\n`;
+                if (card.hp) details += `❤️ HP: ${card.hp}\n`;
+                if (card.types) details += `⚡ Types: ${card.types.join(', ')}\n`;
+                if (card.artist) details += `🎨 Artist: ${card.artist}\n`;
+                if (card.number && card.set?.total) details += `🔢 Card Number: ${card.number}/${card.set.total}\n`;
+                
+                if (card.attacks && card.attacks.length > 0) {
+                    details += `\n⚔️ Attacks:\n`;
+                    card.attacks.forEach(attack => {
+                        details += `• ${attack.name}`;
+                        if (attack.damage) details += ` (${attack.damage} damage)`;
+                        if (attack.text) details += `\n  ${attack.text}`;
+                        details += `\n`;
+                    });
+                }
+                
+                if (card.abilities && card.abilities.length > 0) {
+                    details += `\n🌟 Abilities:\n`;
+                    card.abilities.forEach(ability => {
+                        details += `• ${ability.name}: ${ability.text || 'Special ability'}\n`;
+                    });
+                }
+                
+                if (card.flavorText) {
+                    details += `\n💭 Flavor Text:\n"${card.flavorText}"`;
+                }
+                
+                alert(details);
             }
         }
 
@@ -653,7 +835,7 @@
                 const params = new URLSearchParams();
                 params.append('page', page.toString());
                 params.append('pageSize', pageSize.toString());
-                params.append('orderBy', sortBy);
+                params.append('orderBy', `${sortBy}:${sortOrder}`);
 
                 const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
                     headers: {
