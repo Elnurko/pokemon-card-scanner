@@ -618,9 +618,8 @@
                     params.append('q', currentQuery);
                 }
                 params.append('page', page.toString());
-                // If filtering by rarity, fetch more cards to allow client-side pagination
-                const fetchPageSize = rarityFilter ? 250 : pageSize;
-                params.append('pageSize', fetchPageSize.toString());
+                // Always use pageSize for every search, regardless of filters
+                params.append('pageSize', pageSize.toString());
 
                 // Use API's built-in rarity sort if selected
                 let orderBy;
