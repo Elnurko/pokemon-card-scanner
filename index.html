@@ -603,6 +603,7 @@
 
                 const countData = await countResponse.json();
                 totalCount = countData.totalCount || 0;
+                // We'll update totalPages after filtering if rarityFilter is active
                 totalPages = Math.ceil(totalCount / pageSize);
 
                 // If requested page is beyond available pages, go to last page
@@ -617,7 +618,9 @@
                     params.append('q', currentQuery);
                 }
                 params.append('page', page.toString());
-                params.append('pageSize', pageSize.toString());
+                // If filtering by rarity, fetch more cards to allow client-side pagination
+                const fetchPageSize = rarityFilter ? 250 : pageSize;
+                params.append('pageSize', fetchPageSize.toString());
 
                 // Use API's built-in rarity sort if selected
                 let orderBy;
@@ -641,12 +644,12 @@
                 }
 
                 const data = await response.json();
-                currentCards = data.data || [];
+                let filteredCards = data.data || [];
 
                 // Fuzzy search filter (client-side, only if searchTerm is present and API returns results)
-                if (searchTerm && currentCards.length > 0) {
+                if (searchTerm && filteredCards.length > 0) {
                     const normSearch = normalize(searchTerm);
-                    currentCards = currentCards.filter(card =>
+                    filteredCards = filteredCards.filter(card =>
                         normalize(card.name).includes(normSearch) ||
                         normalize(card.set?.name).includes(normSearch)
                     );
@@ -663,20 +666,33 @@
                         "Uncommon",
                         "Common"
                     ];
-                    currentCards.sort((a, b) => {
+                    filteredCards.sort((a, b) => {
                         const aIdx = rarityOrder.indexOf(a.rarity || "");
                         const bIdx = rarityOrder.indexOf(b.rarity || "");
                         return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
                     });
-                    if (sortOrder === "asc") currentCards.reverse();
+                    if (sortOrder === "asc") filteredCards.reverse();
                 }
 
                 // Ensure rarity filter is exact match (client-side, in case API returns extras)
                 if (rarityFilter) {
-                    currentCards = currentCards.filter(card => card.rarity === rarityFilter);
+                    filteredCards = filteredCards.filter(card => card.rarity === rarityFilter);
                 }
 
-                displayCards(currentCards);
+                // Paginate client-side after filtering
+                if (rarityFilter) {
+                    totalCount = filteredCards.length;
+                    totalPages = Math.ceil(totalCount / pageSize);
+                    // If requested page is beyond available pages, go to last page
+                    if (currentPage > totalPages && totalPages > 0) {
+                        currentPage = totalPages;
+                    }
+                    const startIdx = (currentPage - 1) * pageSize;
+                    const endIdx = startIdx + pageSize;
+                    displayCards(filteredCards.slice(startIdx, endIdx));
+                } else {
+                    displayCards(filteredCards);
+                }
                 updateStats();
                 updatePagination();
 
