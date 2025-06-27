@@ -434,27 +434,18 @@
                 <button class="search-btn" onclick="searchCards(1)">Search</button>
             </div>
             <div class="filters">
-                <select class="filter-select" id="typeFilter">
-                    <option value="">All Types</option>
-                    <option value="Colorless">Colorless</option>
-                    <option value="Fire">Fire</option>
-                    <option value="Water">Water</option>
-                    <option value="Grass">Grass</option>
-                    <option value="Lightning">Lightning</option>
-                    <option value="Psychic">Psychic</option>
-                    <option value="Fighting">Fighting</option>
-                    <option value="Darkness">Darkness</option>
-                    <option value="Metal">Metal</option>
-                    <option value="Fairy">Fairy</option>
-                    <option value="Dragon">Dragon</option>
-                </select>
                 <select class="filter-select" id="rarityFilter">
                     <option value="">All Rarities</option>
                     <option value="Common">Common</option>
                     <option value="Uncommon">Uncommon</option>
                     <option value="Rare">Rare</option>
-                    <option value="Rare Holo">Rare Holo</option>
+                    <option value="Double Rare">Double Rare</option>
                     <option value="Ultra Rare">Ultra Rare</option>
+                    <option value="Illustration Rare">Illustration Rare</option>
+                    <option value="Special Illustration Rare">Special Illustration Rare</option>
+                    <option value="Hyper Rare">Hyper Rare</option>
+                    <option value="ACE SPEC">ACE SPEC</option>
+                    <option value="Promo">Promo</option>
                 </select>
                 <select class="filter-select" id="setFilter">
                     <option value="">All Sets</option>
@@ -464,7 +455,6 @@
                     <option value="set.releaseDate">Sort by Release Date</option>
                     <option value="name">Sort by Name</option>
                     <option value="number">Sort by Card Number</option>
-                    <option value="hp">Sort by HP</option>
                     <option value="rarity">Sort by Rarity</option>
                 </select>
                 <button class="filter-select" id="sortOrderBtn" onclick="toggleSortOrder()" title="Toggle sort order">
@@ -524,7 +514,6 @@
             }
         });
 
-        document.getElementById('typeFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('rarityFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('setFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('sortFilter').addEventListener('change', () => searchCards(1));
@@ -539,16 +528,17 @@
 
         async function loadSets() {
             try {
-                const response = await fetch(`${API_BASE_URL}/sets?orderBy=releaseDate&pageSize=250`, {
+                // Get all sets, order by releaseDate descending (latest first)
+                const response = await fetch(`${API_BASE_URL}/sets?orderBy=-releaseDate&pageSize=250`, {
                     headers: {
                         'X-Api-Key': API_KEY
                     }
                 });
-
                 if (response.ok) {
                     const data = await response.json();
                     const setFilter = document.getElementById('setFilter');
-                    
+                    // Remove all options except the first ("All Sets")
+                    setFilter.innerHTML = '<option value="">All Sets</option>';
                     data.data.forEach(set => {
                         const option = document.createElement('option');
                         option.value = set.id;
@@ -563,14 +553,12 @@
 
         async function searchCards(page = 1) {
             const searchTerm = document.getElementById('searchInput').value.trim();
-            const typeFilter = document.getElementById('typeFilter').value;
             const rarityFilter = document.getElementById('rarityFilter').value;
             const setFilter = document.getElementById('setFilter').value;
             const sortFilter = document.getElementById('sortFilter').value;
 
             currentPage = page;
             sortBy = sortFilter || 'set.releaseDate';
-            
             showLoading(true);
             hideError();
 
@@ -581,9 +569,6 @@
                 if (searchTerm) {
                     filters.push(`name:${searchTerm}`);
                 }
-                if (typeFilter) {
-                    filters.push(`types:${typeFilter}`);
-                }
                 if (rarityFilter) {
                     filters.push(`rarity:"${rarityFilter}"`);
                 }
@@ -592,13 +577,13 @@
                 }
 
                 currentQuery = filters.length > 0 ? filters.join(' AND ') : '';
-                
+
                 // First, get the total count
                 const countParams = new URLSearchParams();
                 if (currentQuery) {
                     countParams.append('q', currentQuery);
                 }
-                
+
                 const countResponse = await fetch(`${API_BASE_URL}/cards?${countParams.toString()}&pageSize=1`, {
                     headers: {
                         'X-Api-Key': API_KEY
@@ -626,7 +611,7 @@
                 }
                 params.append('page', page.toString());
                 params.append('pageSize', pageSize.toString());
-                
+
                 // Apply sort order
                 const orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
                 params.append('orderBy', orderBy);
