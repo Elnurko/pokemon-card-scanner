@@ -107,7 +107,7 @@
         }
 
         .search-btn {
-            padding: 12px 30px;
+            padding: 12px 36px 12px 30px;
             background: linear-gradient(90deg, #ffd6ec 0%, #e0c6f9 100%);
             color: #e85d9e;
             border: none;
@@ -117,14 +117,9 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 16px #f9c6e0a0;
             position: relative;
-        }
-        .search-btn::after {
-            content: '💖';
-            position: absolute;
-            right: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .search-btn:hover {
@@ -431,7 +426,7 @@
         <div class="search-container">
             <div class="search-box">
                 <input type="text" class="search-input" id="searchInput" placeholder="Search for Pokemon cards..." />
-                <button class="search-btn" onclick="searchCards(1)">Search</button>
+                <button class="search-btn" onclick="searchCards(1)"><span>Search</span><span aria-hidden="true" style="margin-left:4px;">💖</span></button>
             </div>
             <div class="filters">
                 <select class="filter-select" id="rarityFilter">
@@ -464,7 +459,7 @@
         </div>
 
         <div id="stats" class="stats" style="display: none;">
-            <img class="stats-mascot" id="statsMascot" src="images/dedenne.png" alt="Dedenne" onerror="this.style.display='none'" />
+            <img class="stats-mascot" id="statsMascot" src="Images/dedenne.png" alt="Dedenne" onerror="this.style.display='none'" />
             <span class="stats-message" id="statsMessage">Yay! You found <strong id="cardCount">0</strong> cards!</span>
         </div>
 
@@ -729,8 +724,8 @@
 
             // Alternate mascots for each card
             const mascots = [
-                'images/maushold.png',
-                'images/dedenne.png'
+                'Images/maushold.png',
+                'Images/dedenne.png'
             ];
             container.innerHTML = cards.map((card, idx) => `
                 <div class="card" onclick="showCardDetails('${card.id}')">
@@ -778,8 +773,8 @@
             const statsMascot = document.getElementById('statsMascot');
             // Alternate mascots for fun
             const mascots = [
-                'images/dedenne.png',
-                'images/maushold.png'
+                'Images/dedenne.png',
+                'Images/maushold.png'
             ];
             const mascotIdx = (currentPage % 2 === 0) ? 1 : 0;
             if (statsMascot) statsMascot.src = mascots[mascotIdx];
