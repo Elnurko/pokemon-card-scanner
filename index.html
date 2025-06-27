@@ -262,33 +262,80 @@
         const API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
         const API_BASE_URL = 'https://api.pokemontcg.io/v2';
 
-        let currentCards = [];
-
         // Load initial cards on page load
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
+            await loadSets(); // Load sets for filter dropdown
             loadRandomCards();
         });
 
         // Add enter key support for search
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                searchCards();
+                searchCards(1);
             }
         });
 
-        async function searchCards() {
+        // Add filter change listeners
+        document.getElementById('typeFilter').addEventListener('change', () => searchCards(1));
+        document.getElementById('rarityFilter').addEventListener('change', () => searchCards(1));
+        document.getElementById('setFilter').addEventListener('change', () => searchCards(1));
+        document.getElementById('sortFilter').addEventListener('change', () => searchCards(1));
+
+        let currentCards = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentQuery = '';
+        let pageSize = 50; // Increased from 20
+        let sortBy = 'set.releaseDate'; // Default sort by set release date
+
+        async function loadSets() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/sets?orderBy=releaseDate&pageSize=250`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const setFilter = document.getElementById('setFilter');
+                    
+                    data.data.forEach(set => {
+                        const option = document.createElement('option');
+                        option.value = set.id;
+                        option.textContent = `${set.name} (${set.releaseDate})`;
+                        setFilter.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load sets:', error);
+            }
+        }
+
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentQuery = '';
+        let pageSize = 50; // Increased from 20
+        let sortBy = 'set.releaseDate'; // Default sort by set release date
+
+        async function searchCards(page = 1) {
             const searchTerm = document.getElementById('searchInput').value.trim();
             const typeFilter = document.getElementById('typeFilter').value;
             const rarityFilter = document.getElementById('rarityFilter').value;
+            const setFilter = document.getElementById('setFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
 
+            currentPage = page;
+            sortBy = sortFilter || 'set.releaseDate';
+            
             showLoading(true);
             hideError();
 
             try {
-                let query = '';
                 const filters = [];
 
                 if (searchTerm) {
+                    // Use wildcard matching for better search results
                     filters.push(`name:${searchTerm}*`);
                 }
                 if (typeFilter) {
@@ -297,12 +344,21 @@
                 if (rarityFilter) {
                     filters.push(`rarity:"${rarityFilter}"`);
                 }
-
-                if (filters.length > 0) {
-                    query = '?q=' + encodeURIComponent(filters.join(' '));
+                if (setFilter) {
+                    filters.push(`set.id:${setFilter}`);
                 }
 
-                const response = await fetch(`${API_BASE_URL}/cards${query}&pageSize=20`, {
+                currentQuery = filters.length > 0 ? filters.join(' AND ') : '';
+                
+                const params = new URLSearchParams();
+                if (currentQuery) {
+                    params.append('q', currentQuery);
+                }
+                params.append('page', page.toString());
+                params.append('pageSize', pageSize.toString());
+                params.append('orderBy', sortBy);
+
+                const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
                     headers: {
                         'X-Api-Key': API_KEY
                     }
@@ -314,8 +370,13 @@
 
                 const data = await response.json();
                 currentCards = data.data || [];
+                
+                // Calculate total pages from response
+                totalPages = Math.ceil(data.totalCount / pageSize);
+                
                 displayCards(currentCards);
-                updateStats(currentCards.length);
+                updateStats(data.totalCount, currentCards.length);
+                updatePagination();
 
             } catch (error) {
                 console.error('Search error:', error);
@@ -330,7 +391,12 @@
             hideError();
 
             try {
-                const response = await fetch(`${API_BASE_URL}/cards?pageSize=20&page=${Math.floor(Math.random() * 10) + 1}`, {
+                const params = new URLSearchParams();
+                params.append('page', Math.floor(Math.random() * 10) + 1);
+                params.append('pageSize', pageSize.toString());
+                params.append('orderBy', 'set.releaseDate');
+
+                const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
                     headers: {
                         'X-Api-Key': API_KEY
                     }
@@ -342,8 +408,11 @@
 
                 const data = await response.json();
                 currentCards = data.data || [];
+                totalPages = Math.ceil(data.totalCount / pageSize);
+                
                 displayCards(currentCards);
-                updateStats(currentCards.length);
+                updateStats(data.totalCount, currentCards.length);
+                updatePagination();
 
             } catch (error) {
                 console.error('Load error:', error);
@@ -389,12 +458,86 @@
             }
         }
 
-        function updateStats(count) {
+        function updateStats(totalCount, currentCount) {
             const statsElement = document.getElementById('stats');
             const countElement = document.getElementById('cardCount');
             
-            countElement.textContent = count;
-            statsElement.style.display = count > 0 ? 'block' : 'none';
+            countElement.innerHTML = `Showing ${currentCount} of ${totalCount} cards (Page ${currentPage} of ${totalPages})`;
+            statsElement.style.display = totalCount > 0 ? 'block' : 'none';
+        }
+
+        function updatePagination() {
+            const paginationContainer = document.getElementById('pagination');
+            if (!paginationContainer) return;
+
+            paginationContainer.innerHTML = '';
+
+            if (totalPages <= 1) {
+                paginationContainer.style.display = 'none';
+                return;
+            }
+
+            paginationContainer.style.display = 'flex';
+
+            // Previous button
+            if (currentPage > 1) {
+                const prevBtn = document.createElement('button');
+                prevBtn.textContent = '« Previous';
+                prevBtn.className = 'pagination-btn';
+                prevBtn.onclick = () => searchCards(currentPage - 1);
+                paginationContainer.appendChild(prevBtn);
+            }
+
+            // Page numbers
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                const firstBtn = document.createElement('button');
+                firstBtn.textContent = '1';
+                firstBtn.className = 'pagination-btn';
+                firstBtn.onclick = () => searchCards(1);
+                paginationContainer.appendChild(firstBtn);
+
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    paginationContainer.appendChild(ellipsis);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.textContent = i.toString();
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.onclick = () => searchCards(i);
+                paginationContainer.appendChild(pageBtn);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    paginationContainer.appendChild(ellipsis);
+                }
+
+                const lastBtn = document.createElement('button');
+                lastBtn.textContent = totalPages.toString();
+                lastBtn.className = 'pagination-btn';
+                lastBtn.onclick = () => searchCards(totalPages);
+                paginationContainer.appendChild(lastBtn);
+            }
+
+            // Next button
+            if (currentPage < totalPages) {
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = 'Next »';
+                nextBtn.className = 'pagination-btn';
+                nextBtn.onclick = () => searchCards(currentPage + 1);
+                paginationContainer.appendChild(nextBtn);
+            }
         }
 
         function showLoading(show) {
