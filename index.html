@@ -188,10 +188,10 @@
             border-radius: 24px;
             overflow: hidden;
             box-shadow: 0 8px 32px #e0c6f9aa, 0 2px 8px #ffd6ec55;
-            transition: all 0.3s ease;
-            cursor: pointer;
             border: 3px solid #ffd6ec;
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .card:hover {
@@ -202,11 +202,13 @@
 
         .card-image {
             width: 100%;
+            aspect-ratio: 5/7;
             height: auto;
-            max-height: 300px;
+            max-height: none;
             object-fit: cover;
             background: #fff6fa;
             border-bottom: 2px dashed #ffd6ec;
+            display: block;
         }
 
         .card-info {
@@ -435,11 +437,12 @@
             }
 
             .card-image {
-                max-height: 160px;
+                aspect-ratio: 5/7;
+                max-height: none;
             }
 
             .card {
-                padding: 0;
+                /* Keep the same look as desktop */
             }
         }
     </style>
