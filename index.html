@@ -357,6 +357,7 @@
         let currentCards = [];
         let currentPage = 1;
         let totalPages = 1;
+        let totalCount = 0;
         let currentQuery = '';
         let pageSize = 50;
         let sortBy = 'set.releaseDate';
@@ -444,7 +445,33 @@
 
                 currentQuery = filters.length > 0 ? filters.join(' AND ') : '';
                 
-                // Build URL parameters
+                // First, get the total count
+                const countParams = new URLSearchParams();
+                if (currentQuery) {
+                    countParams.append('q', currentQuery);
+                }
+                
+                const countResponse = await fetch(`${API_BASE_URL}/cards?${countParams.toString()}&pageSize=1`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (!countResponse.ok) {
+                    throw new Error(`API Error: ${countResponse.status} ${countResponse.statusText}`);
+                }
+
+                const countData = await countResponse.json();
+                totalCount = countData.totalCount || 0;
+                totalPages = Math.ceil(totalCount / pageSize);
+
+                // If requested page is beyond available pages, go to last page
+                if (page > totalPages && totalPages > 0) {
+                    currentPage = totalPages;
+                    page = totalPages;
+                }
+
+                // Now get the actual cards for the current page
                 const params = new URLSearchParams();
                 if (currentQuery) {
                     params.append('q', currentQuery);
@@ -471,23 +498,17 @@
                 const data = await response.json();
                 currentCards = data.data || [];
                 
-                // Better pagination handling
-                const hasNextPage = currentCards.length === pageSize;
-                if (hasNextPage && page === 1) {
-                    totalPages = Math.min(20, 100); // Estimate reasonable max pages
-                } else if (!hasNextPage) {
-                    totalPages = page;
-                } else {
-                    totalPages = Math.max(totalPages, page + 1);
-                }
-                
                 displayCards(currentCards);
-                updateStats(currentCards.length);
+                updateStats();
                 updatePagination();
 
             } catch (error) {
                 console.error('Search error:', error);
                 showError(`Failed to search cards: ${error.message}`);
+                // Reset pagination on error
+                totalCount = 0;
+                totalPages = 1;
+                currentPage = 1;
             } finally {
                 showLoading(false);
             }
@@ -498,7 +519,23 @@
             hideError();
 
             try {
-                const randomPage = Math.floor(Math.random() * 10) + 1;
+                // First get total count for random page calculation
+                const countResponse = await fetch(`${API_BASE_URL}/cards?pageSize=1`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (!countResponse.ok) {
+                    throw new Error(`API Error: ${countResponse.status} ${countResponse.statusText}`);
+                }
+
+                const countData = await countResponse.json();
+                const totalCards = countData.totalCount || 1000;
+                const maxPages = Math.ceil(totalCards / pageSize);
+                const randomPage = Math.floor(Math.random() * Math.min(maxPages, 100)) + 1;
+
+                // Now get the random page of cards
                 const params = new URLSearchParams();
                 params.append('page', randomPage.toString());
                 params.append('pageSize', pageSize.toString());
@@ -519,16 +556,22 @@
 
                 const data = await response.json();
                 currentCards = data.data || [];
-                currentPage = 1;
-                totalPages = currentCards.length === pageSize ? 20 : 1;
+                currentPage = randomPage;
+                totalCount = totalCards;
+                totalPages = maxPages;
+                currentQuery = ''; // Clear query for random load
                 
                 displayCards(currentCards);
-                updateStats(currentCards.length);
+                updateStats();
                 updatePagination();
 
             } catch (error) {
                 console.error('Load error:', error);
                 showError('Failed to load cards. Please check your internet connection.');
+                // Reset pagination on error
+                totalCount = 0;
+                totalPages = 1;
+                currentPage = 1;
             } finally {
                 showLoading(false);
             }
@@ -580,12 +623,19 @@
             }
         }
 
-        function updateStats(currentCount) {
+        function updateStats() {
             const statsElement = document.getElementById('stats');
             const countElement = document.getElementById('cardCount');
             
-            countElement.innerHTML = `Showing ${currentCount} cards (Page ${currentPage}${totalPages > 1 ? ` of ~${totalPages}` : ''})`;
-            statsElement.style.display = currentCount > 0 ? 'block' : 'none';
+            if (totalCount > 0) {
+                const startCard = ((currentPage - 1) * pageSize) + 1;
+                const endCard = Math.min(currentPage * pageSize, totalCount);
+                countElement.innerHTML = `Showing ${startCard}-${endCard} of ${totalCount.toLocaleString()} cards (Page ${currentPage} of ${totalPages})`;
+                statsElement.style.display = 'block';
+            } else {
+                countElement.innerHTML = 'No cards found';
+                statsElement.style.display = currentCards.length > 0 ? 'block' : 'none';
+            }
         }
 
         function updatePagination() {
