@@ -571,7 +571,8 @@
 
                 // Build query filters
                 if (searchTerm) {
-                    filters.push(`(name:${searchTerm} OR set.name:${searchTerm})`);
+                    const quoted = searchTerm.includes(' ') ? `"${searchTerm}"` : searchTerm;
+                    filters.push(`(name:${quoted} OR set.name:${quoted})`);
                 }
                 if (rarityFilter) {
                     filters.push(`rarity:"${rarityFilter}"`);
