@@ -791,71 +791,74 @@
         }
 
         function displayCards(cards) {
-            const container = document.getElementById('cardsContainer');
-            
-            if (!cards || cards.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; color: white; font-size: 20px; grid-column: 1/-1; padding: 60px; font-weight: 600;">
-                        <div style="font-size: 4rem; margin-bottom: 20px;">😢</div>
-                        <div>No Pokémon cards found! Try a different search or filter.</div>
-                        <div style="font-size: 16px; margin-top: 10px; opacity: 0.8;">Maybe they're hiding in tall grass? 🌿</div>
-                    </div>
-                `;
-                return;
-            }
-            const typeColors = {
-                    'Fire': '#FF6B35',
-                    'Water': '#4FC3F7', 
-                    'Grass': '#66BB6A',
-                    'Lightning': '#FFEB3B',
-                    'Psychic': '#AB47BC',
-                    'Fighting': '#8D6E63',
-                    'Darkness': '#424242',
-                    'Metal': '#78909C',
-                    'Fairy': '#F8BBD9',
-                    'Dragon': '#7038F8',
-                    'Colorless': '#BDBDBD'
-                };
+    const container = document.getElementById('cardsContainer');
+    
+    if (!cards || cards.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: white; font-size: 20px; grid-column: 1/-1; padding: 60px; font-weight: 600;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">😢</div>
+                <div>No Pokémon cards found! Try a different search or filter.</div>
+                <div style="font-size: 16px; margin-top: 10px; opacity: 0.8;">Maybe they're hiding in tall grass? 🌿</div>
+            </div>
+        `;
+        return;
+    }
 
-                return `
-                    <div class="card" onclick="openCardModal('${card.id}')">
-                        <div class="card-image-container">
-                            <img src="${card.images?.large || card.images?.small || '/api/placeholder/300/420'}" 
-                                 alt="${card.name}" 
-                                 class="card-image"
-                                 onerror="this.src='/api/placeholder/300/420'; this.alt='Card image not available';" />
-                            ${card.tcgplayer?.prices ? `<div class="price-badge">$${Math.min(...Object.values(card.tcgplayer.prices).map(p => p.market || p.low || p.mid || 999)).toFixed(2)}</div>` : ''}
-                        </div>
-                        <div class="card-info">
-                            <div class="card-name">${card.name}</div>
-                            <div class="card-details">
-                                ${card.hp ? `<div><strong>💖 HP:</strong> ${card.hp}</div>` : ''}
-                                ${card.types ? `<div><strong>🏷️ Type:</strong> ${card.types.map(type => `<span class="type-badge type-${type.toLowerCase()}" style="background: linear-gradient(135deg, ${typeColors[type] || '#999'}, ${adjustColor(typeColors[type] || '#999', -20)})">${type}</span>`).join(' ')}</div>` : ''}
-                                ${card.subtypes ? `<div><strong>📋 Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
-                                ${card.rarity ? `<div><strong>⭐ Rarity:</strong> ${card.rarity}</div>` : ''}
-                                ${card.artist ? `<div><strong>🎨 Artist:</strong> ${card.artist}</div>` : ''}
-                            </div>
-                            ${description ? `<div class="card-description">${description.replace(/<[^>]*>/g, '').substring(0, 120)}${description.length > 120 ? '...' : ''}</div>` : ''}
-                            <div class="card-badges">
-                                ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
-                                ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
-                            </div>
-                            ${card.attacks && card.attacks.length > 0 ? `
-                                <div class="attacks-preview">
-                                    <strong>⚔️ Attacks:</strong>
-                                    ${card.attacks.slice(0, 2).map(attack => `
-                                        <div class="attack-item">
-                                            <span class="attack-name">${attack.name}</span>
-                                            ${attack.damage ? `<span class="attack-damage">${attack.damage}</span>` : ''}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
+    const typeColors = {
+        'Fire': '#FF6B35',
+        'Water': '#4FC3F7', 
+        'Grass': '#66BB6A',
+        'Lightning': '#FFEB3B',
+        'Psychic': '#AB47BC',
+        'Fighting': '#8D6E63',
+        'Darkness': '#424242',
+        'Metal': '#78909C',
+        'Fairy': '#F8BBD9',
+        'Dragon': '#7038F8',
+        'Colorless': '#BDBDBD'
+    };
+
+    container.innerHTML = cards.map(card => {
+        const description = card.flavorText || card.abilities?.[0]?.text || '';
+        
+        return `
+            <div class="card" onclick="openCardModal('${card.id}')">
+                <div class="card-image-container">
+                    <img src="${card.images?.large || card.images?.small || '/api/placeholder/300/420'}" 
+                         alt="${card.name}" 
+                         class="card-image"
+                         onerror="this.src='/api/placeholder/300/420'; this.alt='Card image not available';" />
+                    ${card.tcgplayer?.prices ? `<div class="price-badge">$${Math.min(...Object.values(card.tcgplayer.prices).map(p => p.market || p.low || p.mid || 999)).toFixed(2)}</div>` : ''}
+                </div>
+                <div class="card-info">
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-details">
+                        ${card.hp ? `<div><strong>💖 HP:</strong> ${card.hp}</div>` : ''}
+                        ${card.types ? `<div><strong>🏷️ Type:</strong> ${card.types.map(type => `<span class="type-badge type-${type.toLowerCase()}" style="background: linear-gradient(135deg, ${typeColors[type] || '#999'}, ${adjustColor(typeColors[type] || '#999', -20)})">${type}</span>`).join(' ')}</div>` : ''}
+                        ${card.subtypes ? `<div><strong>📋 Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
+                        ${card.rarity ? `<div><strong>⭐ Rarity:</strong> ${card.rarity}</div>` : ''}
+                        ${card.artist ? `<div><strong>🎨 Artist:</strong> ${card.artist}</div>` : ''}
                     </div>
-                `;
-            }).join('');
-        }
+                    ${description ? `<div class="card-description">${description.replace(/<[^>]*>/g, '').substring(0, 120)}${description.length > 120 ? '...' : ''}</div>` : ''}
+                    <div class="card-badges">
+                        ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
+                        ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
+                    </div>
+                    ${card.attacks && card.attacks.length > 0 ? `
+                        <div class="attacks-preview">
+                            <strong>⚔️ Attacks:</strong>
+                            ${card.attacks.slice(0, 2).map(attack => `
+                                <div class="attack-item">
+                                    <span class="attack-name">${attack.name}</span>
+                                    ${attack.damage ? `<span class="attack-damage">${attack.damage}</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
 
         function adjustColor(hex, percent) {
             const num = parseInt(hex.replace("#",""), 16);
