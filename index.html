@@ -404,20 +404,19 @@
                 const filters = [];
 
                 if (searchTerm) {
-                    // Use wildcard matching for better search results
-                    filters.push(`name:${searchTerm}*`);
+                    filters.push(`name:*${searchTerm}*`);
                 }
                 if (typeFilter) {
                     filters.push(`types:${typeFilter}`);
                 }
                 if (rarityFilter) {
-                    filters.push(`rarity:"${rarityFilter}"`);
+                    filters.push(`rarity:${rarityFilter}`);
                 }
                 if (setFilter) {
                     filters.push(`set.id:${setFilter}`);
                 }
 
-                currentQuery = filters.length > 0 ? filters.join(' AND ') : '';
+                currentQuery = filters.length > 0 ? filters.join(' ') : '';
                 
                 const params = new URLSearchParams();
                 if (currentQuery) {
@@ -440,11 +439,11 @@
                 const data = await response.json();
                 currentCards = data.data || [];
                 
-                // Calculate total pages from response
-                totalPages = Math.ceil(data.totalCount / pageSize);
+                // Calculate total pages from response (estimate since API doesn't return totalCount)
+                totalPages = currentCards.length === pageSize ? Math.min(page + 10, 100) : page;
                 
                 displayCards(currentCards);
-                updateStats(data.totalCount, currentCards.length);
+                updateStats(currentCards.length, currentCards.length);
                 updatePagination();
 
             } catch (error) {
@@ -477,10 +476,10 @@
 
                 const data = await response.json();
                 currentCards = data.data || [];
-                totalPages = Math.ceil(data.totalCount / pageSize);
+                totalPages = currentCards.length === pageSize ? 20 : 1;
                 
                 displayCards(currentCards);
-                updateStats(data.totalCount, currentCards.length);
+                updateStats(currentCards.length, currentCards.length);
                 updatePagination();
 
             } catch (error) {
@@ -531,7 +530,7 @@
             const statsElement = document.getElementById('stats');
             const countElement = document.getElementById('cardCount');
             
-            countElement.innerHTML = `Showing ${currentCount} of ${totalCount} cards (Page ${currentPage} of ${totalPages})`;
+            countElement.innerHTML = `Showing ${currentCount} cards (Page ${currentPage})`;
             statsElement.style.display = totalCount > 0 ? 'block' : 'none';
         }
 
@@ -559,6 +558,7 @@
                     prevBtn.onclick = () => searchCards(currentPage - 1);
                     paginationContainer.appendChild(prevBtn);
                 }
+
                 // Page numbers
                 const startPage = Math.max(1, currentPage - 2);
                 const endPage = Math.min(totalPages, currentPage + 2);
