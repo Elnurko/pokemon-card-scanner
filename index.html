@@ -90,6 +90,13 @@
             align-items: center;
         }
 
+        .search-bar-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
         .search-input {
             flex: 1;
             min-width: 250px;
@@ -460,8 +467,13 @@
 
         <div class="search-container">
             <div class="search-box">
-                <input type="text" class="search-input" id="searchInput" placeholder="Search for Pokemon cards..." />
-                <button class="search-btn" onclick="searchCards(1)"><span>Search</span><span aria-hidden="true" style="margin-left:4px;">💖</span></button>
+                <div class="search-bar-wrapper" style="position:relative; flex:1; display:flex; align-items:center;">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search for Pokemon cards..." style="padding-right:48px;" />
+                    <button class="plus-btn" id="openScannerBtn" title="Scan a card" type="button" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:50%; background:linear-gradient(90deg,#e0c6f9 0%,#ffd6ec 100%); border:none; font-size:1.3rem; color:#e85d9e; box-shadow:0 2px 8px #e0c6f9a0; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; z-index:2;">
+                        <span style="font-size:1.5rem;line-height:1;">+</span>
+                    </button>
+                </div>
+                <button class="search-btn" onclick="searchCards(1)" style="margin-left:10px;"><span>Search</span><span aria-hidden="true" style="margin-left:4px;">💖</span></button>
             </div>
             <div class="filters">
                 <select class="filter-select" id="rarityFilter">
@@ -474,7 +486,7 @@
                     <option value="Uncommon">Uncommon</option>
                     <option value="Common">Common</option>
                 </select>
-                <select class="filter-select" id="setFilter">
+                <select class="filter-select" id="setFilter" style="max-width:220px; min-width:120px; width: 220px;">
                     <option value="">All Sets</option>
                     <!-- Sets will be loaded dynamically -->
                 </select>
@@ -514,6 +526,22 @@
     <div class="decor-sparkle" style="bottom: 30px; left: 40px;"></div>
     <div class="decor-heart" style="bottom: 20px; right: 60px;"></div>
 
+    <div id="scannerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.35); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:24px; padding:32px 24px 24px 24px; box-shadow:0 8px 32px #e0c6f9cc; max-width:90vw; max-height:90vh; text-align:center; position:relative;">
+            <button onclick="closeScannerModal()" style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:1.7rem; color:#e85d9e; cursor:pointer;">&times;</button>
+            <h2 style="color:#e85d9e; margin-bottom:18px;">Scan a Card</h2>
+            <div style="display:flex; gap:18px; justify-content:center; margin-bottom:18px;">
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
+                <input type="file" id="galleryInput" accept="image/*" style="display:none;" />
+                <button class="search-btn" style="padding:12px 24px;" onclick="document.getElementById('cameraInput').click();">📷 Camera</button>
+                <button class="search-btn" style="padding:12px 24px;" onclick="document.getElementById('galleryInput').click();">🖼️ Gallery</button>
+            </div>
+            <div id="scannerImagePreview" style="margin-top:10px;"></div>
+            <button class="search-btn" id="scanCardBtn" style="display:none; margin-top: 14px;" onclick="scanCardImage();">🔍 Scan Card</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         const API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
         const API_BASE_URL = 'https://api.pokemontcg.io/v2';
@@ -880,19 +908,13 @@
                 return `
                     <div class="card" onclick="showCardDetails('${card.id}')">
                         <img src="${charm}" class="card-charm" alt="Charm" onerror="this.style.display='none'" />
-                        <img src="${mascot}" class="card-mascot" alt="Mascot" style="top:10px;right:10px;left:auto;" onerror="this.style.display='none'" />
+                        <img src="${mascot}" class="card-mascot" alt="Mascot" style="top:40px;right:10px;left:auto;" onerror="this.style.display='none'" />
                         <img src="${card.images?.small || 'https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'}" 
                              alt="${card.name || 'Unknown Card'}" 
                              class="card-image"
                              onerror="this.src='https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'">
                         <div class="card-info">
                             <div class="card-name">${card.name || 'Unknown Card'}</div>
-                            <div class="card-details">
-                                ${card.supertype ? `<div><strong>Type:</strong> ${card.supertype}</div>` : ''}
-                                ${card.subtypes && card.subtypes.length ? `<div><strong>Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
-                                ${card.hp ? `<div><strong>HP:</strong> ${card.hp}</div>` : ''}
-                                ${card.types && card.types.length ? `<div><strong>Element:</strong> ${card.types.join(', ')}</div>` : ''}
-                            </div>
                             ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
                             ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
                         </div>
@@ -1033,6 +1055,72 @@
 
         function hideError() {
             document.getElementById('error').style.display = 'none';
+        }
+
+        // --- Card Scanner Modal Logic ---
+        let selectedCardImage = null;
+        const scannerModal = document.getElementById('scannerModal');
+        const openScannerBtn = document.getElementById('openScannerBtn');
+        const scannerImagePreview = document.getElementById('scannerImagePreview');
+        const scanCardBtn = document.getElementById('scanCardBtn');
+
+        openScannerBtn.addEventListener('click', () => {
+            scannerModal.style.display = 'flex';
+            scannerImagePreview.innerHTML = '';
+            scanCardBtn.style.display = 'none';
+            selectedCardImage = null;
+        });
+        function closeScannerModal() {
+            scannerModal.style.display = 'none';
+            scannerImagePreview.innerHTML = '';
+            scanCardBtn.style.display = 'none';
+            selectedCardImage = null;
+        }
+        document.getElementById('cameraInput').addEventListener('change', handleScannerImageInput);
+        document.getElementById('galleryInput').addEventListener('change', handleScannerImageInput);
+        function handleScannerImageInput(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                selectedCardImage = e.target.result;
+                scannerImagePreview.innerHTML = `<img src="${selectedCardImage}" alt="Card Preview" style="max-width:320px; border-radius:16px; box-shadow:0 4px 16px #e0c6f9a0; margin-bottom:10px;" />`;
+                scanCardBtn.style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        }
+        function scanCardImage() {
+            if (!selectedCardImage) {
+                alert('Please select or take a photo of your card first!');
+                return;
+            }
+            scannerImagePreview.innerHTML += '<div id="ocrLoading" style="margin-top:10px; color:#a06cd5;">Scanning card... Please wait.</div>';
+            scanCardBtn.disabled = true;
+            Tesseract.recognize(
+                selectedCardImage,
+                'eng',
+                { logger: m => {
+                    // Optionally, update progress here
+                } }
+            ).then(({ data: { text } }) => {
+                document.getElementById('ocrLoading').remove();
+                scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#e85d9e; background:#fff6fa; border-radius:12px; padding:10px;'>OCR Result:<br><pre style='white-space:pre-wrap; font-size:1em; color:#a06cd5;'>${text}</pre></div>`;
+                scanCardBtn.disabled = false;
+                // --- Extract card name and search ---
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length > 0) {
+                    const detectedName = lines[0];
+                    document.getElementById('searchInput').value = detectedName;
+                    scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#667eea; font-weight:bold;'>Detected card name: <span style='color:#e85d9e;'>${detectedName}</span><br>Searching for closest match...</div>`;
+                    searchCards(1);
+                } else {
+                    scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#c62828;'>Could not detect a card name from the image.</div>`;
+                }
+            }).catch(err => {
+                document.getElementById('ocrLoading').remove();
+                scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#c62828;'>OCR failed: ${err.message}</div>`;
+                scanCardBtn.disabled = false;
+            });
         }
     </script>
 </body>
