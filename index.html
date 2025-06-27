@@ -431,16 +431,13 @@
             <div class="filters">
                 <select class="filter-select" id="rarityFilter">
                     <option value="">All Rarities</option>
-                    <option value="Common">Common</option>
-                    <option value="Uncommon">Uncommon</option>
-                    <option value="Rare">Rare</option>
-                    <option value="Double Rare">Double Rare</option>
+                    <option value="Hyper Rare">Hyper Rare</option>
+                    <option value="Special Illustration Rare">Special Illustration Rare</option>
                     <option value="Ultra Rare">Ultra Rare</option>
                     <option value="Illustration Rare">Illustration Rare</option>
-                    <option value="Special Illustration Rare">Special Illustration Rare</option>
-                    <option value="Hyper Rare">Hyper Rare</option>
-                    <option value="ACE SPEC">ACE SPEC</option>
-                    <option value="Promo">Promo</option>
+                    <option value="Double Rare">Double Rare</option>
+                    <option value="Uncommon">Uncommon</option>
+                    <option value="Common">Common</option>
                 </select>
                 <select class="filter-select" id="setFilter">
                     <option value="">All Sets</option>
@@ -653,6 +650,25 @@
                         normalize(card.name).includes(normSearch) ||
                         normalize(card.set?.name).includes(normSearch)
                     );
+                }
+
+                // Custom rarity sort (client-side)
+                if (sortBy === "rarity") {
+                    const rarityOrder = [
+                        "Hyper Rare",
+                        "Special Illustration Rare",
+                        "Ultra Rare",
+                        "Illustration Rare",
+                        "Double Rare",
+                        "Uncommon",
+                        "Common"
+                    ];
+                    currentCards.sort((a, b) => {
+                        const aIdx = rarityOrder.indexOf(a.rarity || "");
+                        const bIdx = rarityOrder.indexOf(b.rarity || "");
+                        return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
+                    });
+                    if (sortOrder === "asc") currentCards.reverse();
                 }
 
                 displayCards(currentCards);
