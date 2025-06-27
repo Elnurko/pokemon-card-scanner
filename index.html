@@ -88,6 +88,7 @@
             gap: 15px;
             margin-top: 15px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .filter-select {
@@ -188,6 +189,45 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+            padding: 10px 15px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            min-width: 40px;
+        }
+
+        .pagination-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .pagination-ellipsis {
+            padding: 10px 5px;
+            color: #666;
+            font-size: 14px;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -204,6 +244,20 @@
             .cards-grid {
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             }
+            
+            .filters {
+                justify-content: center;
+            }
+            
+            .pagination {
+                gap: 5px;
+            }
+            
+            .pagination-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+                min-width: 35px;
+            }
         }
     </style>
 </head>
@@ -217,7 +271,7 @@
         <div class="search-container">
             <div class="search-box">
                 <input type="text" class="search-input" id="searchInput" placeholder="Search for Pokemon cards..." />
-                <button class="search-btn" onclick="searchCards()">Search</button>
+                <button class="search-btn" onclick="searchCards(1)">Search</button>
             </div>
             <div class="filters">
                 <select class="filter-select" id="typeFilter">
@@ -242,6 +296,17 @@
                     <option value="Rare Holo">Rare Holo</option>
                     <option value="Ultra Rare">Ultra Rare</option>
                 </select>
+                <select class="filter-select" id="setFilter">
+                    <option value="">All Sets</option>
+                    <!-- Sets will be loaded dynamically -->
+                </select>
+                <select class="filter-select" id="sortFilter">
+                    <option value="set.releaseDate">Sort by Release Date</option>
+                    <option value="name">Sort by Name</option>
+                    <option value="number">Sort by Card Number</option>
+                    <option value="hp">Sort by HP</option>
+                    <option value="rarity">Sort by Rarity</option>
+                </select>
             </div>
         </div>
 
@@ -255,7 +320,11 @@
 
         <div id="error" class="error" style="display: none;"></div>
 
+        <div id="pagination" class="pagination"></div>
+
         <div id="cardsContainer" class="cards-grid"></div>
+
+        <div id="paginationBottom" class="pagination"></div>
     </div>
 
     <script>
@@ -467,77 +536,80 @@
         }
 
         function updatePagination() {
-            const paginationContainer = document.getElementById('pagination');
-            if (!paginationContainer) return;
+            const topPagination = document.getElementById('pagination');
+            const bottomPagination = document.getElementById('paginationBottom');
+            
+            [topPagination, bottomPagination].forEach(paginationContainer => {
+                if (!paginationContainer) return;
 
-            paginationContainer.innerHTML = '';
+                paginationContainer.innerHTML = '';
 
-            if (totalPages <= 1) {
-                paginationContainer.style.display = 'none';
-                return;
-            }
-
-            paginationContainer.style.display = 'flex';
-
-            // Previous button
-            if (currentPage > 1) {
-                const prevBtn = document.createElement('button');
-                prevBtn.textContent = '« Previous';
-                prevBtn.className = 'pagination-btn';
-                prevBtn.onclick = () => searchCards(currentPage - 1);
-                paginationContainer.appendChild(prevBtn);
-            }
-
-            // Page numbers
-            const startPage = Math.max(1, currentPage - 2);
-            const endPage = Math.min(totalPages, currentPage + 2);
-
-            if (startPage > 1) {
-                const firstBtn = document.createElement('button');
-                firstBtn.textContent = '1';
-                firstBtn.className = 'pagination-btn';
-                firstBtn.onclick = () => searchCards(1);
-                paginationContainer.appendChild(firstBtn);
-
-                if (startPage > 2) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.textContent = '...';
-                    ellipsis.className = 'pagination-ellipsis';
-                    paginationContainer.appendChild(ellipsis);
-                }
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.textContent = i.toString();
-                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
-                pageBtn.onclick = () => searchCards(i);
-                paginationContainer.appendChild(pageBtn);
-            }
-
-            if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.textContent = '...';
-                    ellipsis.className = 'pagination-ellipsis';
-                    paginationContainer.appendChild(ellipsis);
+                if (totalPages <= 1) {
+                    paginationContainer.style.display = 'none';
+                    return;
                 }
 
-                const lastBtn = document.createElement('button');
-                lastBtn.textContent = totalPages.toString();
-                lastBtn.className = 'pagination-btn';
-                lastBtn.onclick = () => searchCards(totalPages);
-                paginationContainer.appendChild(lastBtn);
-            }
+                paginationContainer.style.display = 'flex';
 
-            // Next button
-            if (currentPage < totalPages) {
-                const nextBtn = document.createElement('button');
-                nextBtn.textContent = 'Next »';
-                nextBtn.className = 'pagination-btn';
-                nextBtn.onclick = () => searchCards(currentPage + 1);
-                paginationContainer.appendChild(nextBtn);
-            }
+                // Previous button
+                if (currentPage > 1) {
+                    const prevBtn = document.createElement('button');
+                    prevBtn.textContent = '« Previous';
+                    prevBtn.className = 'pagination-btn';
+                    prevBtn.onclick = () => searchCards(currentPage - 1);
+                    paginationContainer.appendChild(prevBtn);
+                }
+// Page numbers
+                const startPage = Math.max(1, currentPage - 2);
+                const endPage = Math.min(totalPages, currentPage + 2);
+
+                if (startPage > 1) {
+                    const firstBtn = document.createElement('button');
+                    firstBtn.textContent = '1';
+                    firstBtn.className = 'pagination-btn';
+                    firstBtn.onclick = () => searchCards(1);
+                    paginationContainer.appendChild(firstBtn);
+
+                    if (startPage > 2) {
+                        const ellipsis = document.createElement('span');
+                        ellipsis.textContent = '...';
+                        ellipsis.className = 'pagination-ellipsis';
+                        paginationContainer.appendChild(ellipsis);
+                    }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i.toString();
+                    pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                    pageBtn.onclick = () => searchCards(i);
+                    paginationContainer.appendChild(pageBtn);
+                }
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        const ellipsis = document.createElement('span');
+                        ellipsis.textContent = '...';
+                        ellipsis.className = 'pagination-ellipsis';
+                        paginationContainer.appendChild(ellipsis);
+                    }
+
+                    const lastBtn = document.createElement('button');
+                    lastBtn.textContent = totalPages.toString();
+                    lastBtn.className = 'pagination-btn';
+                    lastBtn.onclick = () => searchCards(totalPages);
+                    paginationContainer.appendChild(lastBtn);
+                }
+
+                // Next button
+                if (currentPage < totalPages) {
+                    const nextBtn = document.createElement('button');
+                    nextBtn.textContent = 'Next »';
+                    nextBtn.className = 'pagination-btn';
+                    nextBtn.onclick = () => searchCards(currentPage + 1);
+                    paginationContainer.appendChild(nextBtn);
+                }
+            });
         }
 
         function showLoading(show) {
@@ -556,3 +628,4 @@
     </script>
 </body>
 </html>
+                
