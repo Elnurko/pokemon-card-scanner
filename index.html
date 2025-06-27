@@ -420,12 +420,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <img class="header-mascot" src="images/maushold.png" alt="Maushold mascot" title="Maushold" />
+            <img class="header-mascot" src="Images/maushold.png" alt="Maushold mascot" title="Maushold" onerror="this.style.display='none'" />
             <div style="text-align:center;">
                 <h1>✨ Pokemon TCG Explorer ✨</h1>
                 <p>Discover and explore Pokemon trading cards</p>
             </div>
-            <img class="header-mascot" src="images/dedenne.png" alt="Dedenne mascot" title="Dedenne" />
+            <img class="header-mascot" src="Images/dedenne.png" alt="Dedenne mascot" title="Dedenne" onerror="this.style.display='none'" />
         </div>
 
         <div class="search-container">
@@ -458,13 +458,13 @@
                     <option value="rarity">Sort by Rarity</option>
                 </select>
                 <button class="filter-select" id="sortOrderBtn" onclick="toggleSortOrder()" title="Toggle sort order">
-                    📈 Ascending
+                    📉 Descending
                 </button>
             </div>
         </div>
 
         <div id="stats" class="stats" style="display: none;">
-            <img class="stats-mascot" id="statsMascot" src="images/dedenne.png" alt="Dedenne" />
+            <img class="stats-mascot" id="statsMascot" src="images/dedenne.png" alt="Dedenne" onerror="this.style.display='none'" />
             <span class="stats-message" id="statsMessage">Yay! You found <strong id="cardCount">0</strong> cards!</span>
         </div>
 
@@ -499,12 +499,21 @@
         let currentQuery = '';
         let pageSize = 50;
         let sortBy = 'set.releaseDate';
-        let sortOrder = 'asc'; // 'asc' or 'desc'
+        let sortOrder = 'desc'; // 'asc' or 'desc'
 
         // Load initial content on page load
         window.addEventListener('load', async () => {
+            // Set default sort to newest set first
+            sortBy = 'set.releaseDate';
+            sortOrder = 'desc';
+            // Set the sort filter and sort order button to match
+            document.getElementById('sortFilter').value = 'set.releaseDate';
+            const sortOrderBtn = document.getElementById('sortOrderBtn');
+            sortOrderBtn.innerHTML = '📉 Descending';
+            sortOrderBtn.title = 'Current order: Descending';
             await loadSets();
-            loadRandomCards();
+            // Always start on first page, newest to oldest
+            searchCards(1);
         });
 
         // Add event listeners
@@ -725,7 +734,7 @@
             ];
             container.innerHTML = cards.map((card, idx) => `
                 <div class="card" onclick="showCardDetails('${card.id}')">
-                    <img src="${mascots[idx % 2]}" class="card-mascot" alt="Mascot" />
+                    <img src="${mascots[idx % 2]}" class="card-mascot" alt="Mascot" onerror="this.style.display='none'" />
                     <img src="${card.images?.small || 'https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'}" 
                          alt="${card.name || 'Unknown Card'}" 
                          class="card-image"
