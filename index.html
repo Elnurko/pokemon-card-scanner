@@ -96,6 +96,25 @@
             border: 2px solid #e0e0e0;
             border-radius: 6px;
             font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:hover {
+            border-color: #667eea;
+        }
+
+        #sortOrderBtn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: 2px solid #667eea;
+            font-weight: bold;
+        }
+
+        #sortOrderBtn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
         }
 
         .loading {
@@ -307,6 +326,9 @@
                     <option value="hp">Sort by HP</option>
                     <option value="rarity">Sort by Rarity</option>
                 </select>
+                <button class="filter-select" id="sortOrderBtn" onclick="toggleSortOrder()" title="Toggle sort order">
+                    📈 Ascending
+                </button>
             </div>
         </div>
 
@@ -338,6 +360,7 @@
         let currentQuery = '';
         let pageSize = 50;
         let sortBy = 'set.releaseDate';
+        let sortOrder = 'asc'; // 'asc' or 'desc'
 
         // Load initial content on page load
         window.addEventListener('load', async () => {
@@ -356,6 +379,14 @@
         document.getElementById('rarityFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('setFilter').addEventListener('change', () => searchCards(1));
         document.getElementById('sortFilter').addEventListener('change', () => searchCards(1));
+
+        function toggleSortOrder() {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            const btn = document.getElementById('sortOrderBtn');
+            btn.innerHTML = sortOrder === 'asc' ? '📈 Ascending' : '📉 Descending';
+            btn.title = `Current order: ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`;
+            searchCards(1); // Refresh search with new sort order
+        }
 
         async function loadSets() {
             try {
@@ -420,7 +451,10 @@
                 }
                 params.append('page', page.toString());
                 params.append('pageSize', pageSize.toString());
-                params.append('orderBy', sortBy);
+                
+                // Apply sort order
+                const orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+                params.append('orderBy', orderBy);
 
                 console.log('Searching with query:', currentQuery); // Debug log
 
@@ -468,7 +502,10 @@
                 const params = new URLSearchParams();
                 params.append('page', randomPage.toString());
                 params.append('pageSize', pageSize.toString());
-                params.append('orderBy', 'set.releaseDate');
+                
+                // Apply sort order for random cards too
+                const orderBy = sortOrder === 'desc' ? `-set.releaseDate` : 'set.releaseDate';
+                params.append('orderBy', orderBy);
 
                 const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
                     headers: {
