@@ -636,6 +636,27 @@
                 const data = await response.json();
                 currentCards = data.data || [];
                 
+                // Custom rarity sort
+                if (sortBy === "rarity") {
+                    const rarityOrder = [
+                        "Hyper Rare",
+                        "Special Illustration Rare",
+                        "Ultra Rare",
+                        "ACE SPEC",
+                        "Double Rare",
+                        "Holo Rare",
+                        "Rare",
+                        "Uncommon",
+                        "Common"
+                    ];
+                    currentCards.sort((a, b) => {
+                        const aIdx = rarityOrder.indexOf(a.rarity || "");
+                        const bIdx = rarityOrder.indexOf(b.rarity || "");
+                        return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
+                    });
+                    if (sortOrder === "desc") currentCards.reverse();
+                }
+
                 displayCards(currentCards);
                 updateStats();
                 updatePagination();
