@@ -577,7 +577,7 @@
                 // Build query filters
                 if (searchTerm) {
                     const quoted = searchTerm.includes(' ') ? `"${searchTerm}"` : searchTerm;
-                    filters.push(`(name:${quoted} OR set.name:${quoted})`);
+                    filters.push(`name:${quoted}`);
                 }
                 if (rarityFilter) {
                     filters.push(`rarity:"${rarityFilter}"`);
@@ -622,8 +622,13 @@
                 params.append('page', page.toString());
                 params.append('pageSize', pageSize.toString());
 
-                // Apply sort order
-                const orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+                // Use API's built-in rarity sort if selected
+                let orderBy;
+                if (sortBy === 'rarity') {
+                    orderBy = sortOrder === 'desc' ? '-rarity' : 'rarity';
+                } else {
+                    orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+                }
                 params.append('orderBy', orderBy);
 
                 console.log('Searching with query:', currentQuery); // Debug log
@@ -640,35 +645,14 @@
 
                 const data = await response.json();
                 currentCards = data.data || [];
-                
-                // Fuzzy search filter (client-side)
-                if (searchTerm) {
+
+                // Fuzzy search filter (client-side, only if searchTerm is present and API returns results)
+                if (searchTerm && currentCards.length > 0) {
                     const normSearch = normalize(searchTerm);
                     currentCards = currentCards.filter(card =>
                         normalize(card.name).includes(normSearch) ||
                         normalize(card.set?.name).includes(normSearch)
                     );
-                }
-
-                // Custom rarity sort
-                if (sortBy === "rarity") {
-                    const rarityOrder = [
-                        "Hyper Rare",
-                        "Special Illustration Rare",
-                        "Ultra Rare",
-                        "ACE SPEC",
-                        "Double Rare",
-                        "Holo Rare",
-                        "Rare",
-                        "Uncommon",
-                        "Common"
-                    ];
-                    currentCards.sort((a, b) => {
-                        const aIdx = rarityOrder.indexOf(a.rarity || "");
-                        const bIdx = rarityOrder.indexOf(b.rarity || "");
-                        return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
-                    });
-                    if (sortOrder === "asc") currentCards.reverse();
                 }
 
                 displayCards(currentCards);
