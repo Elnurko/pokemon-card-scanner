@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokémon Card Scanner</title>
+    <title>Pokemon TCG Explorer</title>
     <style>
         * {
             margin: 0;
@@ -12,783 +12,403 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            color: #333;
         }
 
         .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .search-container {
             background: white;
             border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 600px;
-            width: 100%;
-            text-align: center;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
+        .search-box {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
         }
 
-        .upload-area {
-            border: 3px dashed #ddd;
-            border-radius: 10px;
-            padding: 40px 20px;
-            margin-bottom: 30px;
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .search-btn {
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: #fafafa;
         }
 
-        .upload-area:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .upload-area.dragover {
-            border-color: #667eea;
-            background: #e8f2ff;
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
         }
 
-        #fileInput {
-            display: none;
-        }
-
-        .upload-text {
-            color: #666;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-
-        .upload-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.3s ease;
-        }
-
-        .upload-btn:hover {
-            background: #5a67d8;
-        }
-
-        .camera-btn {
-            background: #48bb78;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-left: 10px;
-            transition: background 0.3s ease;
-        }
-
-        .camera-btn:hover {
-            background: #38a169;
-        }
-
-        .preview-container {
-            margin: 20px 0;
-            display: none;
-        }
-
-        #imagePreview {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        .filter-select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
         }
 
         .loading {
-            display: none;
-            margin: 20px 0;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #666;
-            font-style: italic;
-        }
-
-        .candidates {
-            display: none;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 25px;
-            margin-top: 20px;
-            text-align: left;
-        }
-
-        .candidates h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 20px;
             text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
         }
 
-        .card-grid {
+        .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
 
-        .card-option {
+        .card {
             background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
             cursor: pointer;
-            transition: transform 0.2s ease;
-            border: 2px solid transparent;
         }
 
-        .card-option:hover {
-            transform: translateY(-2px);
-            border-color: #667eea;
-        }
-
-        .card-option.selected {
-            border-color: #48bb78;
-            background: #f0fff4;
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
         }
 
         .card-image {
             width: 100%;
-            height: 120px;
+            height: 300px;
             object-fit: cover;
-            border-radius: 6px;
-            margin-bottom: 10px;
+            background: #f5f5f5;
+        }
+
+        .card-info {
+            padding: 15px;
         }
 
         .card-name {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            color: #2d3748;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .card-details {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
         }
 
         .card-set {
-            font-size: 14px;
-            color: #718096;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-top: 8px;
         }
 
-        .result {
-            display: none;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 25px;
-            margin-top: 20px;
-            text-align: left;
-        }
-
-        .result h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 20px;
-            text-align: center;
-        }
-
-        .final-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .final-card-image {
-            width: 150px;
-            height: 210px;
-            object-fit: cover;
-            border-radius: 8px;
-            flex-shrink: 0;
-        }
-
-        .final-card-info {
-            flex: 1;
-        }
-
-        .final-card-name {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2d3748;
-            margin-bottom: 10px;
-        }
-
-        .final-card-set {
-            font-size: 18px;
-            color: #718096;
+        .card-rarity {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-top: 8px;
+            margin-left: 5px;
         }
 
         .error {
-            display: none;
-            background: #fed7d7;
-            color: #c53030;
+            background: #ffebee;
+            color: #c62828;
             padding: 15px;
             border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .reset-btn {
-            background: #a0aec0;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 15px;
-            font-size: 14px;
-        }
-
-        .reset-btn:hover {
-            background: #718096;
-        }
-
-        .confirm-btn {
-            background: #48bb78;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 15px auto 0;
-            display: block;
-        }
-
-        .confirm-btn:hover {
-            background: #38a169;
-        }
-
-        #cameraCapture {
-            display: none;
-            max-width: 100%;
             margin: 20px 0;
+            text-align: center;
         }
 
-        .debug-info {
-            background: #e2e8f0;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            font-size: 12px;
-            color: #4a5568;
-            display: none;
+        .stats {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                min-width: 100%;
+            }
+            
+            .cards-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎴 Pokémon Card Scanner</h1>
-        
-        <div class="upload-area" id="uploadArea">
-            <div class="upload-text">Drop your Pokémon card image here or</div>
-            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-                Choose File
-            </button>
-            <button class="camera-btn" id="cameraBtn">
-                📷 Take Photo
-            </button>
-            <input type="file" id="fileInput" accept="image/*" capture="environment">
+        <div class="header">
+            <h1>🎯 Pokemon TCG Explorer</h1>
+            <p>Discover and explore Pokemon trading cards</p>
         </div>
 
-        <video id="cameraCapture" autoplay playsinline></video>
-        
-        <div class="preview-container" id="previewContainer">
-            <img id="imagePreview" alt="Card preview">
-        </div>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <div class="loading-text">Analyzing card using AI vision... Finding similar cards</div>
-        </div>
-
-        <div class="candidates" id="candidates">
-            <h3>Select Your Card:</h3>
-            <div class="card-grid" id="cardGrid"></div>
-            <button class="confirm-btn" id="confirmBtn" onclick="confirmSelection()">
-                Confirm Selection
-            </button>
-            <div class="debug-info" id="debugInfo"></div>
-        </div>
-
-        <div class="result" id="result">
-            <h3>Card Identified:</h3>
-            <div class="final-card" id="finalCard">
-                <img class="final-card-image" id="finalCardImage" alt="Final card">
-                <div class="final-card-info">
-                    <div class="final-card-name" id="finalCardName"></div>
-                    <div class="final-card-set" id="finalCardSet"></div>
-                </div>
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search for Pokemon cards..." />
+                <button class="search-btn" onclick="searchCards()">Search</button>
             </div>
-            <button class="reset-btn" onclick="resetApp()">Scan Another Card</button>
+            <div class="filters">
+                <select class="filter-select" id="typeFilter">
+                    <option value="">All Types</option>
+                    <option value="Colorless">Colorless</option>
+                    <option value="Fire">Fire</option>
+                    <option value="Water">Water</option>
+                    <option value="Grass">Grass</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Psychic">Psychic</option>
+                    <option value="Fighting">Fighting</option>
+                    <option value="Darkness">Darkness</option>
+                    <option value="Metal">Metal</option>
+                    <option value="Fairy">Fairy</option>
+                    <option value="Dragon">Dragon</option>
+                </select>
+                <select class="filter-select" id="rarityFilter">
+                    <option value="">All Rarities</option>
+                    <option value="Common">Common</option>
+                    <option value="Uncommon">Uncommon</option>
+                    <option value="Rare">Rare</option>
+                    <option value="Rare Holo">Rare Holo</option>
+                    <option value="Ultra Rare">Ultra Rare</option>
+                </select>
+            </div>
         </div>
 
-        <div class="error" id="error">
-            <div id="errorMessage"></div>
-            <button class="reset-btn" onclick="resetApp()">Try Again</button>
+        <div id="stats" class="stats" style="display: none;">
+            <strong id="cardCount">0</strong> cards found
         </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Loading cards...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="cardsContainer" class="cards-grid"></div>
     </div>
 
     <script>
-        // Configuration
-        const POKEMON_API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
-        
-        // DOM elements
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const cameraBtn = document.getElementById('cameraBtn');
-        const cameraCapture = document.getElementById('cameraCapture');
-        const previewContainer = document.getElementById('previewContainer');
-        const imagePreview = document.getElementById('imagePreview');
-        const loading = document.getElementById('loading');
-        const candidates = document.getElementById('candidates');
-        const cardGrid = document.getElementById('cardGrid');
-        const result = document.getElementById('result');
-        const error = document.getElementById('error');
-        const errorMessage = document.getElementById('errorMessage');
-        const debugInfo = document.getElementById('debugInfo');
+        const API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
+        const API_BASE_URL = 'https://api.pokemontcg.io/v2';
 
-        let currentStream = null;
-        let candidateCards = [];
-        let selectedCard = null;
+        let currentCards = [];
 
-        // File upload handlers
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
+        // Load initial cards on page load
+        window.addEventListener('load', () => {
+            loadRandomCards();
         });
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFileSelect(files[0]);
+        // Add enter key support for search
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchCards();
             }
         });
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileSelect(e.target.files[0]);
-            }
-        });
+        async function searchCards() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const rarityFilter = document.getElementById('rarityFilter').value;
 
-        // Camera functionality
-        cameraBtn.addEventListener('click', async () => {
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
-                });
-                cameraCapture.srcObject = currentStream;
-                cameraCapture.style.display = 'block';
-                cameraBtn.textContent = '📸 Capture';
-                cameraBtn.onclick = capturePhoto;
-            } catch (err) {
-                showError('Camera access denied or not available');
-            }
-        });
-
-        function capturePhoto() {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = cameraCapture.videoWidth;
-            canvas.height = cameraCapture.videoHeight;
-            context.drawImage(cameraCapture, 0, 0);
-            
-            canvas.toBlob((blob) => {
-                handleFileSelect(blob);
-                stopCamera();
-            }, 'image/jpeg', 0.8);
-        }
-
-        function stopCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-            cameraCapture.style.display = 'none';
-            cameraBtn.textContent = '📷 Take Photo';
-            cameraBtn.onclick = () => cameraBtn.click();
-        }
-
-        async function handleFileSelect(file) {
-            resetUI();
-            
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imagePreview.src = e.target.result;
-                previewContainer.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-
-            // Show loading
-            loading.style.display = 'block';
+            showLoading(true);
+            hideError();
 
             try {
-                // Analyze image properties
-                const imageFeatures = await analyzeImageFeatures(file);
-                
-                // Search for candidate cards using multiple strategies
-                const searchResults = await findCandidateCards(imageFeatures);
-                
-                if (searchResults.length === 0) {
-                    throw new Error('No matching cards found. Please ensure it\'s a clear photo of a Pokémon card from 2018-2025.');
+                let query = '';
+                const filters = [];
+
+                if (searchTerm) {
+                    filters.push(`name:${searchTerm}*`);
+                }
+                if (typeFilter) {
+                    filters.push(`types:${typeFilter}`);
+                }
+                if (rarityFilter) {
+                    filters.push(`rarity:"${rarityFilter}"`);
                 }
 
-                candidateCards = searchResults;
-                displayCandidates(searchResults);
-                
-            } catch (err) {
-                console.error('Error processing image:', err);
-                showError(err.message || 'Failed to process the image. Please try again.');
+                if (filters.length > 0) {
+                    query = '?q=' + encodeURIComponent(filters.join(' '));
+                }
+
+                const response = await fetch(`${API_BASE_URL}/cards${query}&pageSize=20`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                currentCards = data.data || [];
+                displayCards(currentCards);
+                updateStats(currentCards.length);
+
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Failed to search cards. Please try again.');
             } finally {
-                loading.style.display = 'none';
+                showLoading(false);
             }
         }
 
-        async function analyzeImageFeatures(file) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                img.onload = () => {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    
-                    // Analyze dominant colors
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const colors = extractDominantColors(imageData);
-                    
-                    // Calculate aspect ratio and size
-                    const aspectRatio = img.width / img.height;
-                    
-                    // Determine likely card type based on colors and aspect ratio
-                    const cardType = determineCardType(colors, aspectRatio);
-                    
-                    resolve({
-                        colors: colors,
-                        aspectRatio: aspectRatio,
-                        cardType: cardType,
-                        width: img.width,
-                        height: img.height
-                    });
-                };
-                
-                img.src = URL.createObjectURL(file);
-            });
-        }
+        async function loadRandomCards() {
+            showLoading(true);
+            hideError();
 
-        function extractDominantColors(imageData) {
-            const data = imageData.data;
-            const colorCounts = {};
-            
-            // Sample every 10th pixel for performance
-            for (let i = 0; i < data.length; i += 40) {
-                const r = Math.round(data[i] / 51) * 51;     // Group colors
-                const g = Math.round(data[i + 1] / 51) * 51;
-                const b = Math.round(data[i + 2] / 51) * 51;
-                const color = `${r},${g},${b}`;
-                colorCounts[color] = (colorCounts[color] || 0) + 1;
-            }
-            
-            // Get top 5 colors
-            return Object.entries(colorCounts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 5)
-                .map(([color]) => color.split(',').map(Number));
-        }
-
-        function determineCardType(colors, aspectRatio) {
-            // Analyze colors to determine likely Pokemon types
-            const typeColors = {
-                fire: [[255, 102, 102], [255, 153, 51], [204, 51, 0]],
-                water: [[102, 153, 255], [51, 102, 204], [0, 51, 153]],
-                grass: [[102, 204, 102], [51, 153, 51], [0, 102, 0]],
-                electric: [[255, 255, 102], [255, 204, 0], [204, 153, 0]],
-                psychic: [[204, 102, 204], [153, 51, 153], [102, 0, 102]],
-                fighting: [[204, 102, 51], [153, 76, 0], [102, 51, 0]],
-                darkness: [[102, 102, 102], [51, 51, 51], [0, 0, 0]],
-                metal: [[153, 153, 153], [102, 102, 102], [204, 204, 204]],
-                fairy: [[255, 153, 204], [255, 102, 153], [204, 51, 102]]
-            };
-
-            let bestMatch = 'colorless';
-            let bestScore = 0;
-
-            Object.entries(typeColors).forEach(([type, typeColorList]) => {
-                let score = 0;
-                colors.forEach(color => {
-                    typeColorList.forEach(typeColor => {
-                        const distance = Math.sqrt(
-                            Math.pow(color[0] - typeColor[0], 2) +
-                            Math.pow(color[1] - typeColor[1], 2) +
-                            Math.pow(color[2] - typeColor[2], 2)
-                        );
-                        if (distance < 50) score += (50 - distance);
-                    });
+            try {
+                const response = await fetch(`${API_BASE_URL}/cards?pageSize=20&page=${Math.floor(Math.random() * 10) + 1}`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
                 });
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMatch = type;
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
                 }
-            });
 
-            return bestMatch;
-        }
+                const data = await response.json();
+                currentCards = data.data || [];
+                displayCards(currentCards);
+                updateStats(currentCards.length);
 
-        async function findCandidateCards(features) {
-            const baseUrl = 'https://api.pokemontcg.io/v2/cards';
-            const headers = { 'X-Api-Key': POKEMON_API_KEY };
-            
-            // Comprehensive search strategies
-            const searchQueries = [
-                // Search by detected type
-                features.cardType !== 'colorless' ? `types:${features.cardType}` : '',
-                
-                // Special card types (based on visual patterns)
-                'subtypes:"GX"',
-                'subtypes:"EX"', 
-                'subtypes:"V"',
-                'subtypes:"VMAX"',
-                'subtypes:"Tag Team"',
-                'subtypes:"Ultra Rare"',
-                
-                // Popular Pokemon that appear in psychic/colorful cards
-                'name:"Mewtwo"',
-                'name:"Mew"',
-                'name:"Lugia"',
-                'name:"Ho-Oh"',
-                'name:"Rayquaza"',
-                'name:"Dialga"',
-                'name:"Palkia"',
-                'name:"Giratina"',
-                'name:"Arceus"',
-                
-                // Recent sets with high-value cards
-                'set.series:"Sun & Moon"',
-                'set.series:"Sword & Shield"',
-                'set.series:"Scarlet & Violet"',
-                
-                // Specific valuable sets
-                'set.name:"Unified Minds"',
-                'set.name:"Cosmic Eclipse"',
-                'set.name:"Team Up"',
-                'set.name:"Unbroken Bonds"',
-                'set.name:"Hidden Fates"',
-                'set.name:"Champion\'s Path"',
-                'set.name:"Battle Styles"',
-                'set.name:"Chilling Reign"',
-                'set.name:"Evolving Skies"',
-                'set.name:"Celebrations"',
-                'set.name:"Fusion Strike"',
-                'set.name:"Brilliant Stars"',
-                'set.name:"Astral Radiance"',
-                'set.name:"Pokémon GO"',
-                'set.name:"Lost Origin"',
-                'set.name:"Silver Tempest"',
-                
-                // Rarity-based searches
-                'rarity:"Rare Holo GX"',
-                'rarity:"Ultra Rare"',
-                'rarity:"Secret Rare"',
-                'rarity:"Rare Rainbow"',
-                
-                // High HP cards (often special cards)
-                'hp:[200 TO *]',
-                
-                // Recent date range
-                'set.releaseDate:[2018/01/01 TO 2025/12/31]'
-            ].filter(q => q.length > 0);
-
-            let allCards = [];
-            
-            // Execute searches with delay to avoid rate limits
-            for (let i = 0; i < searchQueries.length; i++) {
-                const query = searchQueries[i];
-                try {
-                    const url = `${baseUrl}?q=${encodeURIComponent(query)}&pageSize=100`;
-                    const response = await fetch(url, { headers });
-                    const data = await response.json();
-                    
-                    if (data.data && data.data.length > 0) {
-                        allCards.push(...data.data);
-                    }
-                    
-                    // Small delay between requests
-                    if (i < searchQueries.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                    }
-                } catch (err) {
-                    console.error('Search error:', err);
-                }
+            } catch (error) {
+                console.error('Load error:', error);
+                showError('Failed to load cards. Please check your internet connection.');
+            } finally {
+                showLoading(false);
             }
-
-            // Remove duplicates
-            const uniqueCards = allCards.filter((card, index, self) => 
-                index === self.findIndex(c => c.id === card.id)
-            );
-
-            // Filter for cards from 2018-2025
-            const recentCards = uniqueCards.filter(card => {
-                const releaseDate = card.set.releaseDate;
-                if (releaseDate) {
-                    const year = parseInt(releaseDate.split('/')[2] || releaseDate.split('-')[0]);
-                    return year >= 2018 && year <= 2025;
-                }
-                return true;
-            });
-
-            // Score cards based on visual features
-            const scoredCards = recentCards.map(card => {
-                let score = 0;
-                
-                // Boost score for psychic-type cards if purple/pink detected
-                if (features.cardType === 'psychic' && 
-                    (card.types && card.types.includes('Psychic'))) {
-                    score += 10;
-                }
-                
-                // Boost score for high-value card types
-                if (card.subtypes) {
-                    if (card.subtypes.includes('GX')) score += 8;
-                    if (card.subtypes.includes('Tag Team')) score += 15;
-                    if (card.subtypes.includes('V')) score += 6;
-                    if (card.subtypes.includes('VMAX')) score += 7;
-                }
-                
-                // Boost score for high HP (often special cards)
-                if (card.hp && parseInt(card.hp) >= 200) {
-                    score += 5;
-                }
-                
-                // Boost score for ultra rare cards
-                if (card.rarity && card.rarity.includes('Ultra Rare')) {
-                    score += 3;
-                }
-                
-                return { ...card, score };
-            });
-
-            // Sort by score and return top candidates
-            const topCards = scoredCards
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 20);
-
-            // Show debug info
-            debugInfo.innerHTML = `
-                Found ${uniqueCards.length} total cards, showing top ${topCards.length} matches.<br>
-                Dominant colors: ${features.colors.map(c => `rgb(${c.join(',')})`).join(', ')}<br>
-                Detected type: ${features.cardType}<br>
-                Search queries executed: ${searchQueries.length}
-            `;
-            debugInfo.style.display = 'block';
-
-            return topCards;
         }
 
-        function displayCandidates(cards) {
-            cardGrid.innerHTML = '';
+        function displayCards(cards) {
+            const container = document.getElementById('cardsContainer');
             
-            cards.forEach((card, index) => {
-                const cardElement = document.createElement('div');
-                cardElement.className = 'card-option';
-                cardElement.onclick = () => selectCard(card, cardElement);
-                
-                cardElement.innerHTML = `
-                    <img src="${card.images.small}" alt="${card.name}" class="card-image" 
-                         onerror="this.style.display='none'">
-                    <div class="card-name">${card.name}</div>
-                    <div class="card-set">${card.set.name}</div>
-                `;
-                
-                cardGrid.appendChild(cardElement);
-            });
-            
-            candidates.style.display = 'block';
-        }
-
-        function selectCard(card, element) {
-            // Remove previous selection
-            document.querySelectorAll('.card-option').forEach(el => {
-                el.classList.remove('selected');
-            });
-            
-            // Select current card
-            element.classList.add('selected');
-            selectedCard = card;
-        }
-
-        function confirmSelection() {
-            if (!selectedCard) {
-                alert('Please select a card first');
+            if (!cards || cards.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: white; font-size: 18px; grid-column: 1/-1;">No cards found. Try a different search term.</div>';
                 return;
             }
+
+            container.innerHTML = cards.map(card => `
+                <div class="card" onclick="showCardDetails('${card.id}')">
+                    <img src="${card.images?.small || 'https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'}" 
+                         alt="${card.name}" 
+                         class="card-image"
+                         onerror="this.src='https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'">
+                    <div class="card-info">
+                        <div class="card-name">${card.name || 'Unknown Card'}</div>
+                        <div class="card-details">
+                            ${card.supertype ? `<div><strong>Type:</strong> ${card.supertype}</div>` : ''}
+                            ${card.subtypes ? `<div><strong>Subtype:</strong> ${card.subtypes.join(', ')}</div>` : ''}
+                            ${card.hp ? `<div><strong>HP:</strong> ${card.hp}</div>` : ''}
+                            ${card.types ? `<div><strong>Element:</strong> ${card.types.join(', ')}</div>` : ''}
+                        </div>
+                        ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
+                        ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showCardDetails(cardId) {
+            const card = currentCards.find(c => c.id === cardId);
+            if (card) {
+                alert(`Card: ${card.name}\nSet: ${card.set?.name || 'Unknown'}\nRarity: ${card.rarity || 'Unknown'}\nHP: ${card.hp || 'N/A'}\nTypes: ${card.types?.join(', ') || 'Unknown'}`);
+            }
+        }
+
+        function updateStats(count) {
+            const statsElement = document.getElementById('stats');
+            const countElement = document.getElementById('cardCount');
             
-            // Display final result
-            document.getElementById('finalCardImage').src = selectedCard.images.large || selectedCard.images.small;
-            document.getElementById('finalCardName').textContent = selectedCard.name;
-            document.getElementById('finalCardSet').textContent = `${selectedCard.set.name} (${selectedCard.set.series})`;
-            
-            candidates.style.display = 'none';
-            result.style.display = 'block';
+            countElement.textContent = count;
+            statsElement.style.display = count > 0 ? 'block' : 'none';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
         }
 
         function showError(message) {
-            errorMessage.textContent = message;
-            error.style.display = 'block';
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
         }
 
-        function resetUI() {
-            previewContainer.style.display = 'none';
-            loading.style.display = 'none';
-            candidates.style.display = 'none';
-            result.style.display = 'none';
-            error.style.display = 'none';
-            debugInfo.style.display = 'none';
-            selectedCard = null;
-            candidateCards = [];
-        }
-
-        function resetApp() {
-            resetUI();
-            fileInput.value = '';
-            stopCamera();
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
         }
     </script>
 </body>
