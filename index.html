@@ -264,13 +264,18 @@
 
         .card-charm {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 40px;
+            left: -4px;
             width: 38px;
-            height: 38px;
-            z-index: 3;
+            height: 90px;
+            z-index: 5;
             pointer-events: none;
-            filter: drop-shadow(0 2px 6px #ffd6ec);
+            background: none;
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            padding: 0;
+            object-fit: contain;
         }
 
         .error {
@@ -838,12 +843,11 @@
                 return;
             }
 
-            // Alternate mascots for each card
+            // Mascot always top right, charm always top left
             const mascots = [
                 'Images/maushold.png',
                 'Images/dedenne.png'
             ];
-            // Charm images
             const charms = [
                 'Images/Charm1.png',
                 'Images/Charm2.png',
@@ -852,11 +856,12 @@
                 'Images/Charm5.png'
             ];
             container.innerHTML = cards.map((card, idx) => {
+                const mascot = mascots[idx % 2];
                 const charm = charms[Math.floor(Math.random() * charms.length)];
                 return `
                     <div class="card" onclick="showCardDetails('${card.id}')">
                         <img src="${charm}" class="card-charm" alt="Charm" onerror="this.style.display='none'" />
-                        <img src="${mascots[idx % 2]}" class="card-mascot" alt="Mascot" onerror="this.style.display='none'" />
+                        <img src="${mascot}" class="card-mascot" alt="Mascot" style="top:10px;right:10px;left:auto;" onerror="this.style.display='none'" />
                         <img src="${card.images?.small || 'https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'}" 
                              alt="${card.name || 'Unknown Card'}" 
                              class="card-image"
