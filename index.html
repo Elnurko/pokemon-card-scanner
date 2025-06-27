@@ -555,6 +555,11 @@
             }
         }
 
+        // Fuzzy normalization helper
+        function normalize(str) {
+            return (str || '').toLowerCase().replace(/[-\s]/g, '');
+        }
+
         async function searchCards(page = 1) {
             const searchTerm = document.getElementById('searchInput').value.trim();
             const rarityFilter = document.getElementById('rarityFilter').value;
@@ -636,6 +641,15 @@
                 const data = await response.json();
                 currentCards = data.data || [];
                 
+                // Fuzzy search filter (client-side)
+                if (searchTerm) {
+                    const normSearch = normalize(searchTerm);
+                    currentCards = currentCards.filter(card =>
+                        normalize(card.name).includes(normSearch) ||
+                        normalize(card.set?.name).includes(normSearch)
+                    );
+                }
+
                 // Custom rarity sort
                 if (sortBy === "rarity") {
                     const rarityOrder = [
@@ -654,7 +668,7 @@
                         const bIdx = rarityOrder.indexOf(b.rarity || "");
                         return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
                     });
-                    if (sortOrder === "desc") currentCards.reverse();
+                    if (sortOrder === "asc") currentCards.reverse();
                 }
 
                 displayCards(currentCards);
