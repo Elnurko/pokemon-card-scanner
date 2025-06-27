@@ -425,7 +425,7 @@
                 <h1>✨ Pokemon TCG Explorer ✨</h1>
                 <p>Discover and explore Pokemon trading cards</p>
             </div>
-            <img class="header-mascot" src="https://www.pngplay.com/wp-content/uploads/13/Dedenne-Pokemon-Transparent-Images.png" alt="Dedenne mascot" title="Dedenne" />
+            <img class="header-mascot" src="https://archives.bulbagarden.net/media/upload/7/7e/0702Dedenne.png" alt="Dedenne mascot" title="Dedenne" />
         </div>
 
         <div class="search-container">
@@ -464,7 +464,7 @@
         </div>
 
         <div id="stats" class="stats" style="display: none;">
-            <img class="stats-mascot" id="statsMascot" src="https://www.pngplay.com/wp-content/uploads/13/Dedenne-Pokemon-Transparent-Images.png" alt="Dedenne" />
+            <img class="stats-mascot" id="statsMascot" src="https://archives.bulbagarden.net/media/upload/7/7e/0702Dedenne.png" alt="Dedenne" />
             <span class="stats-message" id="statsMessage">Yay! You found <strong id="cardCount">0</strong> cards!</span>
         </div>
 
@@ -721,7 +721,7 @@
             // Alternate mascots for each card
             const mascots = [
                 'https://archives.bulbagarden.net/media/upload/7/7e/0925Maushold.png',
-                'https://www.pngplay.com/wp-content/uploads/13/Dedenne-Pokemon-Transparent-Images.png'
+                'https://archives.bulbagarden.net/media/upload/7/7e/0702Dedenne.png'
             ];
             container.innerHTML = cards.map((card, idx) => `
                 <div class="card" onclick="showCardDetails('${card.id}')">
@@ -769,7 +769,7 @@
             const statsMascot = document.getElementById('statsMascot');
             // Alternate mascots for fun
             const mascots = [
-                'https://www.pngplay.com/wp-content/uploads/13/Dedenne-Pokemon-Transparent-Images.png',
+                'https://archives.bulbagarden.net/media/upload/7/7e/0702Dedenne.png',
                 'https://archives.bulbagarden.net/media/upload/7/7e/0925Maushold.png'
             ];
             const mascotIdx = (currentPage % 2 === 0) ? 1 : 0;
