@@ -671,6 +671,11 @@
                     if (sortOrder === "asc") currentCards.reverse();
                 }
 
+                // Ensure rarity filter is exact match (client-side, in case API returns extras)
+                if (rarityFilter) {
+                    currentCards = currentCards.filter(card => card.rarity === rarityFilter);
+                }
+
                 displayCards(currentCards);
                 updateStats();
                 updatePagination();
