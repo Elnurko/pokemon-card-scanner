@@ -679,20 +679,8 @@
                     filteredCards = filteredCards.filter(card => card.rarity === rarityFilter);
                 }
 
-                // Paginate client-side after filtering
-                if (rarityFilter) {
-                    totalCount = filteredCards.length;
-                    totalPages = Math.ceil(totalCount / pageSize);
-                    // If requested page is beyond available pages, go to last page
-                    if (currentPage > totalPages && totalPages > 0) {
-                        currentPage = totalPages;
-                    }
-                    const startIdx = (currentPage - 1) * pageSize;
-                    const endIdx = startIdx + pageSize;
-                    displayCards(filteredCards.slice(startIdx, endIdx));
-                } else {
-                    displayCards(filteredCards);
-                }
+                // Always use API-side pagination and total count
+                displayCards(filteredCards);
                 updateStats();
                 updatePagination();
 
