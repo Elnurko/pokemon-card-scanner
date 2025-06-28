@@ -67,6 +67,17 @@
             color: #e85d9e;
             font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', 'Arial', sans-serif;
             letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        .header h1:hover {
+            transform: scale(1.05);
+            text-shadow: 3px 3px 12px #f9c6e0, 0 0 15px #fff6fa;
+            color: #d63384;
+        }
+        .header h1:active {
+            transform: scale(0.98);
         }
         .header p {
             color: #a06cd5;
@@ -260,16 +271,118 @@
             box-shadow: 0 2px 8px #ffd6ec33;
         }
 
-        .card-mascot {
+        .card-price {
+            background: linear-gradient(90deg, #e8f5e8 0%, #d4edda 100%);
+            color: #2e7d32;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 8px;
+            margin-left: 7px;
+            box-shadow: 0 2px 8px #4caf5033;
+        }
+
+        .card-price.no-price {
+            background: linear-gradient(90deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: #757575;
+            border-color: #bdbdbd;
+            box-shadow: 0 2px 8px #9e9e9e33;
+        }
+
+        .price-tooltip {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            background: linear-gradient(135deg, #ffe0f7 60%, #e0e7ff 100%);
+            color: #e85d9e;
+            padding: 18px 22px 16px 22px;
+            border-radius: 18px;
+            font-size: 15px;
+            min-width: 170px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s cubic-bezier(.4,0,.2,1), transform 0.2s cubic-bezier(.4,0,.2,1);
+            box-shadow: 0 8px 32px #e0c6f9cc, 0 2px 8px #ffd6ec55;
+            border: 2px solid #ffd6ec;
+            text-align: left;
+            line-height: 1.6;
+            font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', 'Arial', sans-serif;
+        }
+        .price-tooltip.show {
+            opacity: 1;
+            transform: translateY(-8px) scale(1.04);
+        }
+        .price-tooltip-content {
+            margin-left: 0;
+        }
+        .price-tooltip-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .price-tooltip-row:last-child {
+            margin-bottom: 0;
+        }
+        .price-tooltip-label {
+            font-size: 14px;
+            color: #a06cd5;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            background: #fff6fa;
+            border-radius: 8px;
+            padding: 2px 10px;
+            margin-right: 4px;
+        }
+        .price-tooltip-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e85d9e;
+            letter-spacing: 0.5px;
+            background: #fff6fa;
+            border-radius: 8px;
+            padding: 2px 10px;
+        }
+        .price-tooltip-icon {
             width: 36px;
             height: 36px;
-            z-index: 2;
-            opacity: 0.85;
+            object-fit: contain;
+            vertical-align: middle;
+            margin-right: 2px;
+        }
+        .price-tooltip-cute-heart {
+            display: none;
+        }
+        .price-tooltip-hearts {
+            position: absolute;
+            top: 10px;
+            right: 16px;
+            font-size: 20px;
             pointer-events: none;
-            filter: drop-shadow(0 2px 6px #ffd6ec);
+            z-index: 2;
+        }
+
+        .card-mascot {
+            position: absolute;
+            top: 44px;
+            right: 4px;
+            width: 54px;
+            height: 54px;
+            z-index: 2;
+            opacity: 0.97;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 10px #ffd6ec);
+            background: none;
+            border-radius: 50%;
+        }
+        .card-mascot-sleeping-eevee {
+            width: 60px !important;
+            height: 30px !important;
+            top: 54px !important;
+            right: 7px !important;
+            border-radius: 18px !important;
         }
 
         .card-charm {
@@ -405,52 +518,207 @@
             font-size: 14px;
         }
 
+        @media (max-width: 1200px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
         @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .search-box {
-                flex-direction: column;
-            }
-            
-            .search-input {
-                min-width: 100%;
-            }
-            
             .cards-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
-            .filters {
-                justify-content: center;
+            .card-compact {
+                max-width: 100%;
             }
-            
-            .pagination {
-                gap: 5px;
-            }
-            
-            .pagination-btn {
-                padding: 8px 12px;
-                font-size: 12px;
-                min-width: 35px;
-            }
+        }
 
-            .card-charm {
-                top: 34px;
-                left: 4px;
-                width: 34px;
-                height: 80px;
-            }
+        .card-horizontal {
+            display: flex;
+            background: linear-gradient(135deg, #fff6fa 60%, #ffe0f7 100%);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px #e0c6f9aa, 0 2px 8px #ffd6ec55;
+            border: 3px solid #ffd6ec;
+            overflow: hidden;
+            margin-bottom: 24px;
+            min-height: 180px;
+        }
+        .card-horizontal-image {
+            width: 120px;
+            height: 170px;
+            object-fit: cover;
+            border-right: 2px dashed #ffd6ec;
+            background: #fff6fa;
+        }
+        .card-horizontal-info {
+            flex: 1;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .card-horizontal-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #e85d9e;
+            margin-bottom: 8px;
+        }
+        .card-horizontal-meta {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .card-horizontal-price {
+            margin-top: 8px;
+        }
 
-            .card-image {
-                aspect-ratio: 5/7;
-                max-height: none;
-            }
-
-            .card {
-                /* Keep the same look as desktop */
-            }
+        .card-compact {
+            position: relative;
+            background: none;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin-bottom: 0;
+            max-width: 220px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            overflow: visible;
+        }
+        .card-compact-image {
+            width: 100%;
+            max-width: 220px;
+            height: 320px;
+            object-fit: cover;
+            border-radius: 12px 12px 0 0;
+            margin: 0 auto;
+            background: #fff6fa;
+            box-shadow: 0 2px 8px #e0c6f933;
+        }
+        .card-info-bar {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            border-radius: 0 0 16px 16px;
+            box-shadow: 0 4px 16px #e0c6f9cc;
+            padding: 0 12px 6px 12px;
+            min-height: 48px;
+            font-size: 1.08rem;
+            margin-top: 0;
+            width: 100%;
+        }
+        .card-info-rarity {
+            font-weight: bold;
+            color: #222;
+            margin-right: 8px;
+            min-width: 32px;
+            text-align: left;
+            font-size: 1.1em;
+        }
+        .card-info-setnum {
+            color: #5a3a6b;
+            font-size: 1em;
+            flex: 1 1 auto;
+            text-align: center;
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            letter-spacing: 0.5px;
+        }
+        .card-info-price-btn {
+            background: linear-gradient(90deg, #fffbe6 0%, #fff9c4 100%);
+            color: #bfa100;
+            font-weight: bold;
+            border: 1.5px solid #ffe082;
+            border-radius: 999px;
+            font-size: 1.08em;
+            padding: 6px 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px #ffe08233;
+            transition: background 0.2s, color 0.2s;
+            outline: none;
+            margin-left: 8px;
+            margin-right: 0;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 80px;
+            max-width: 120px;
+            white-space: nowrap;
+        }
+        .card-info-price-btn:hover, .card-info-price-btn:focus {
+            background: linear-gradient(90deg, #fffde7 0%, #fff9c4 100%);
+            color: #e6b800;
+            border-color: #ffe082;
+        }
+        .price-popup {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 54px;
+            min-width: 270px;
+            background: rgba(255, 246, 250, 0.98);
+            border: 2px solid #ffd6ec;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #e0c6f9cc, 0 2px 8px #ffd6ec55;
+            padding: 22px 22px 18px 22px;
+            z-index: 100;
+            text-align: left;
+            display: none;
+        }
+        .price-popup.show {
+            display: block;
+        }
+        .price-popup-content {
+            margin-top: 0;
+        }
+        .price-popup-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        .price-popup-row:last-child {
+            margin-bottom: 0;
+        }
+        .price-popup-label {
+            font-size: 15px;
+            color: #a06cd5;
+            font-weight: 600;
+            background: #fff6fa;
+            border-radius: 8px;
+            padding: 2px 10px;
+            margin-right: 8px;
+            min-width: 90px;
+        }
+        .price-popup-price-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 70px;
+            justify-content: flex-end;
+        }
+        .price-popup-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e85d9e;
+            background: #fff6fa;
+            border-radius: 8px;
+            padding: 2px 14px;
+            text-align: right;
+        }
+        .price-popup-heart-sparkle {
+            font-size: 1.3em;
+            margin-left: 2px;
+            color: #e85d9e;
+            filter: drop-shadow(0 0 2px #ffd6ec);
+        }
+        .price-popup-icon {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            vertical-align: middle;
+            margin-right: 2px;
         }
     </style>
 </head>
@@ -459,7 +727,7 @@
         <div class="header">
             <img class="header-mascot" src="Images/maushold.png" alt="Maushold mascot" title="Maushold" onerror="this.style.display='none'" />
             <div style="text-align:center;">
-                <h1>✨ Pokemon TCG Explorer ✨</h1>
+                <h1 onclick="refreshToFirstPage()">✨ Pokemon TCG Explorer ✨</h1>
                 <p>Discover and explore Pokemon trading cards</p>
             </div>
             <img class="header-mascot" src="Images/dedenne.png" alt="Dedenne mascot" title="Dedenne" onerror="this.style.display='none'" />
@@ -541,7 +809,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         const API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
         const API_BASE_URL = 'https://api.pokemontcg.io/v2';
@@ -556,43 +824,36 @@
         let sortBy = 'set.releaseDate';
         let sortOrder = 'desc'; // 'asc' or 'desc'
 
-        // --- Fuzzy card name search ---
-        let allCardNames = [];
-        let fuse = null;
-        async function loadAllCardNames() {
-            let page = 1;
-            let hasMore = true;
-            let names = [];
-            while (hasMore) {
-                const response = await fetch(`${API_BASE_URL}/cards?pageSize=250&page=${page}`, {
-                    headers: { 'X-Api-Key': API_KEY }
-                });
-                if (!response.ok) break;
-                const data = await response.json();
-                if (data.data && data.data.length > 0) {
-                    names.push(...data.data.map(card => card.name));
-                    hasMore = data.data.length === 250;
-                    page++;
-                } else {
-                    hasMore = false;
-                }
-            }
-            // Remove duplicates
-            allCardNames = Array.from(new Set(names));
-            fuse = new Fuse(allCardNames, { includeScore: true, threshold: 0.4 });
-        }
+        // Mascot pool (relative to Images/)
+        const mascots = [
+            'Images/151Mew_Smile.png',
+            'Images/173Cleffa_Channel.png',
+            'Images/180px-133Eevee_Dream_8.png',
+            'Images/180px-133Eevee_Dream_9.png', // sleeping Eevee restored
+            'Images/249Lugia_OS_anime.png',
+            'Images/587Emolga_Dream_4.png',
+            'Images/906Sprigatito_Dream_6.png',
+            'Images/1024px-384Rayquaza_Mega_Dream.png',
+            'Images/1280px-0384Rayquaza-Shiny_HZ_anime_2.png',
+            'Images/1024px-0487Giratina-Origin.png',
+            'Images/1024px-0877Morpeko-Full.png',
+            'Images/1024px-0877Morpeko-Hangry.png',
+            'Images/dedenne.png',
+            'Images/maushold.png',
+        ];
 
         // Load initial content on page load
         window.addEventListener('load', async () => {
             // Set default sort to newest set first
             sortBy = 'set.releaseDate';
             sortOrder = 'desc';
+            // Set the sort filter and sort order button to match
             document.getElementById('sortFilter').value = 'set.releaseDate';
             const sortOrderBtn = document.getElementById('sortOrderBtn');
             sortOrderBtn.innerHTML = '📉 Descending';
             sortOrderBtn.title = 'Current order: Descending';
             await loadSets();
-            await loadAllCardNames();
+            // Always start on first page, newest to oldest
             searchCards(1);
         });
 
@@ -646,17 +907,199 @@
         }
 
         async function searchCards(page = 1) {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const rarityFilter = document.getElementById('rarityFilter').value;
+            const setFilter = document.getElementById('setFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+
+            currentPage = page;
+            sortBy = sortFilter || 'set.releaseDate';
             showLoading(true);
             hideError();
+
             try {
-                // Fetch all cards from backend
-                const cards = await fetchAllCardsFromBackend();
-                // Optionally filter/search client-side if needed
-                displayCards(cards);
+                const filters = [];
+
+                // Build query filters
+                if (searchTerm) {
+                    const quoted = searchTerm.includes(' ') ? `"${searchTerm}"` : searchTerm;
+                    filters.push(`name:${quoted}`);
+                }
+                if (rarityFilter) {
+                    filters.push(`rarity:"${rarityFilter}"`);
+                }
+                if (setFilter) {
+                    filters.push(`set.id:${setFilter}`);
+                }
+
+                currentQuery = filters.length > 0 ? filters.join(' AND ') : '';
+
+                // Hybrid pagination for problematic rarities
+                const problematicRarities = ["Illustration Rare", "Special Illustration Rare"];
+                if (problematicRarities.includes(rarityFilter)) {
+                    // Fetch all cards matching the API's rarity filter (may include extras)
+                    let allCards = [];
+                    let apiPage = 1;
+                    let keepFetching = true;
+                    while (keepFetching) {
+                        const params = new URLSearchParams();
+                        if (currentQuery) params.append('q', currentQuery);
+                        params.append('page', apiPage.toString());
+                        params.append('pageSize', '250');
+                        let orderBy;
+                        if (sortBy === 'rarity') {
+                            orderBy = sortOrder === 'desc' ? '-rarity' : 'rarity';
+                        } else {
+                            orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+                        }
+                        params.append('orderBy', orderBy);
+                        const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
+                            headers: { 'X-Api-Key': API_KEY }
+                        });
+                        if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                        const data = await response.json();
+                        allCards = allCards.concat(data.data || []);
+                        if (!data.data || data.data.length < 250) {
+                            keepFetching = false;
+                        } else {
+                            apiPage++;
+                        }
+                    }
+                    // Filter for exact rarity match
+                    let filteredCards = allCards.filter(card => card.rarity === rarityFilter);
+                    // Fuzzy search filter (client-side, only if searchTerm is present)
+                    if (searchTerm && filteredCards.length > 0) {
+                        const normSearch = normalize(searchTerm);
+                        filteredCards = filteredCards.filter(card =>
+                            normalize(card.name).includes(normSearch) ||
+                            normalize(card.set?.name).includes(normSearch)
+                        );
+                    }
+                    // Custom rarity sort (client-side)
+                    if (sortBy === "rarity") {
+                        const rarityOrder = [
+                            "Hyper Rare",
+                            "Special Illustration Rare",
+                            "Ultra Rare",
+                            "Illustration Rare",
+                            "Double Rare",
+                            "Uncommon",
+                            "Common"
+                        ];
+                        filteredCards.sort((a, b) => {
+                            const aIdx = rarityOrder.indexOf(a.rarity || "");
+                            const bIdx = rarityOrder.indexOf(b.rarity || "");
+                            return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
+                        });
+                        if (sortOrder === "asc") filteredCards.reverse();
+                    }
+                    // Paginate client-side
+                    totalCount = filteredCards.length;
+                    totalPages = Math.ceil(totalCount / pageSize);
+                    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+                    const startIdx = (currentPage - 1) * pageSize;
+                    const endIdx = startIdx + pageSize;
+                    displayCards(filteredCards.slice(startIdx, endIdx));
+                    updateStats();
+                    updatePagination();
+                    showLoading(false);
+                    return;
+                }
+
+                // --- Normal API-side pagination for all other rarities ---
+                // First, get the total count
+                const countParams = new URLSearchParams();
+                if (currentQuery) {
+                    countParams.append('q', currentQuery);
+                }
+
+                const countResponse = await fetch(`${API_BASE_URL}/cards?${countParams.toString()}&pageSize=1`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (!countResponse.ok) {
+                    throw new Error(`API Error: ${countResponse.status} ${countResponse.statusText}`);
+                }
+
+                const countData = await countResponse.json();
+                totalCount = countData.totalCount || 0;
+                totalPages = Math.ceil(totalCount / pageSize);
+
+                if (page > totalPages && totalPages > 0) {
+                    currentPage = totalPages;
+                    page = totalPages;
+                }
+
+                // Now get the actual cards for the current page
+                const params = new URLSearchParams();
+                if (currentQuery) {
+                    params.append('q', currentQuery);
+                }
+                params.append('page', page.toString());
+                params.append('pageSize', pageSize.toString());
+
+                let orderBy;
+                if (sortBy === 'rarity') {
+                    orderBy = sortOrder === 'desc' ? '-rarity' : 'rarity';
+                } else {
+                    orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+                }
+                params.append('orderBy', orderBy);
+
+                const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                let filteredCards = data.data || [];
+
+                // Fuzzy search filter (client-side, only if searchTerm is present and API returns results)
+                if (searchTerm && filteredCards.length > 0) {
+                    const normSearch = normalize(searchTerm);
+                    filteredCards = filteredCards.filter(card =>
+                        normalize(card.name).includes(normSearch) ||
+                        normalize(card.set?.name).includes(normSearch)
+                    );
+                }
+
+                // Custom rarity sort (client-side)
+                if (sortBy === "rarity") {
+                    const rarityOrder = [
+                        "Hyper Rare",
+                        "Special Illustration Rare",
+                        "Ultra Rare",
+                        "Illustration Rare",
+                        "Double Rare",
+                        "Uncommon",
+                        "Common"
+                    ];
+                    filteredCards.sort((a, b) => {
+                        const aIdx = rarityOrder.indexOf(a.rarity || "");
+                        const bIdx = rarityOrder.indexOf(b.rarity || "");
+                        return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
+                    });
+                    if (sortOrder === "asc") filteredCards.reverse();
+                }
+
+                displayCards(filteredCards);
                 updateStats();
                 updatePagination();
+
             } catch (error) {
-                showError('Failed to load cards from backend.');
+                console.error('Search error:', error);
+                showError(`Failed to search cards: ${error.message}`);
+                // Reset pagination on error
+                totalCount = 0;
+                totalPages = 1;
+                currentPage = 1;
             } finally {
                 showLoading(false);
             }
@@ -727,46 +1170,112 @@
 
         function displayCards(cards) {
             const container = document.getElementById('cardsContainer');
-            if (!container) {
-                console.warn('cardsContainer element not found!');
-                return;
-            }
             if (!cards || cards.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #e85d9e; font-size: 18px; grid-column: 1/-1; padding: 40px;">No cards found. Try a different search term or adjust your filters.</div>';
+                container.innerHTML = '<div style="text-align: center; color: white; font-size: 18px; grid-column: 1/-1; padding: 40px;">No cards found. Try a different search term or adjust your filters.</div>';
                 return;
             }
-
-            // Mascot always top right, charm always top left
-            const mascots = [
-                'Images/maushold.png',
-                'Images/dedenne.png'
-            ];
-            const charms = [
-                'Images/Charm1.png',
-                'Images/Charm2.png',
-                'Images/Charm3.png',
-                'Images/Charm4.png',
-                'Images/Charm5.png'
-            ];
-            container.innerHTML = cards.map((card, idx) => {
-                const mascot = mascots[idx % 2];
-                const charm = charms[Math.floor(Math.random() * charms.length)];
+            let prevMascot = null;
+            container.innerHTML = cards.slice(0, 30).map((card, idx) => {
+                 // Assign mascot randomly, but not the same as previous
+                 let mascotImg;
+                 let tries = 0;
+                 do {
+                     mascotImg = mascots[Math.floor(Math.random() * mascots.length)];
+                     tries++;
+                 } while (mascotImg === prevMascot && mascots.length > 1 && tries < 10);
+                 prevMascot = mascotImg;
+                const averagePrice = getAveragePrice(card);
+                let priceDisplay = '<button class="card-info-price-btn" disabled>No Price</button>';
+                let popupContent = '';
+                const tcgIcon = `<img class='price-popup-icon' src='Images/TCGplayer_Logo.svg.png' alt='TCGPlayer' />`;
+                const cmkIcon = `<img class='price-popup-icon' src='Images/CMLogoBlue1_-_VerticalTagline.png' alt='Cardmarket' />`;
+                if (averagePrice) {
+                    let popupRows = '';
+                    if (averagePrice.tcgPrice) {
+                        popupRows += `<div class='price-popup-row'>${tcgIcon}<span class='price-popup-label'>TCGPlayer</span><span class='price-popup-price-wrap'><span class='price-popup-price'>$${averagePrice.tcgPrice}</span><span class='price-popup-heart-sparkle' title='Favorite'>💖</span></span></div>`;
+                    }
+                    if (averagePrice.cardmarketPrice) {
+                        popupRows += `<div class='price-popup-row'>${cmkIcon}<span class='price-popup-label'>Cardmarket</span><span class='price-popup-price-wrap'><span class='price-popup-price'>$${averagePrice.cardmarketPrice}</span><span class='price-popup-heart-sparkle' title='Favorite'>💖</span></span></div>`;
+                    }
+                    popupContent = `<div class='price-popup-content'>${popupRows}</div>`;
+                    priceDisplay = `<button class=\"card-info-price-btn\" onclick=\"showPricePopup(event, '${btoa(encodeURIComponent(popupContent))}')\">$${averagePrice.average}</button>`;
+                }
+                const setNumber = card.number && card.set ? `${card.number}/${card.set.total}` : '';
+                // Rarity short code (HR, SR, etc)
+                let rarityShort = '';
+                if (card.rarity) {
+                    if (card.rarity.includes('Hyper')) rarityShort = 'HR';
+                    else if (card.rarity.includes('Special')) rarityShort = 'SR';
+                    else if (card.rarity.includes('Ultra')) rarityShort = 'UR';
+                    else if (card.rarity.includes('Illustration')) rarityShort = 'IR';
+                    else if (card.rarity.includes('Double')) rarityShort = 'RR';
+                    else if (card.rarity.includes('Rare')) rarityShort = 'R';
+                    else if (card.rarity.includes('Uncommon')) rarityShort = 'U';
+                    else if (card.rarity.includes('Common')) rarityShort = 'C';
+                    else rarityShort = card.rarity[0];
+                }
                 return `
-                    <div class="card" onclick="showCardDetails('${card.id}')">
-                        <img src="${charm}" class="card-charm" alt="Charm" onerror="this.style.display='none'" />
-                        <img src="${mascot}" class="card-mascot" alt="Mascot" style="top:40px;right:10px;left:auto;" onerror="this.style.display='none'" />
-                        <img src="${card.images?.small || 'https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'}" 
-                             alt="${card.name || 'Unknown Card'}" 
-                             class="card-image"
-                             onerror="this.src='https://via.placeholder.com/250x350/f0f0f0/999?text=No+Image'">
-                        <div class="card-info">
-                            <div class="card-name">${card.name || 'Unknown Card'}</div>
-                            ${card.set ? `<span class="card-set">${card.set.name}</span>` : ''}
-                            ${card.rarity ? `<span class="card-rarity">${card.rarity}</span>` : ''}
+                    <div class=\"card-compact\" style=\"position:relative;\">
+                        <img class=\"card-mascot${mascotImg.includes('Eevee_Dream_9') ? ' card-mascot-sleeping-eevee' : ''}\" src=\"${mascotImg}\" alt=\"Mascot\" />
+                        <img class=\"card-compact-image\" src=\"${card.images?.small || 'https://via.placeholder.com/240x340'}\" alt=\"${card.name || 'Unknown Card'}\" />
+                        <div class=\"card-info-bar\">
+                            <span class=\"card-info-rarity\">${rarityShort}</span>
+                            <span class=\"card-info-setnum\">${setNumber}</span>
+                            ${priceDisplay}
                         </div>
+                        <div class=\"price-popup\"></div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function getAveragePrice(card) {
+            if (!card || !card.tcgplayer || !card.cardmarket) {
+                return null;
+            }
+
+            let tcgPrice = null;
+            let cardmarketPrice = null;
+
+            // Try to get TCGPlayer price
+            if (card.tcgplayer.prices) {
+                tcgPrice = card.tcgplayer.prices.holofoil?.market || 
+                          card.tcgplayer.prices.normal?.market || 
+                          card.tcgplayer.prices.reverseHolofoil?.market || 
+                          card.tcgplayer.prices['1stEdition']?.market || 
+                          card.tcgplayer.prices.unlimitedHolofoil?.market || 
+                          card.tcgplayer.prices.unlimited?.market;
+            }
+
+            // Try to get Cardmarket price
+            if (card.cardmarket.prices) {
+                cardmarketPrice = card.cardmarket.prices.averageSellPrice || 
+                                card.cardmarket.prices.trendPrice || 
+                                card.cardmarket.prices.lowPrice;
+            }
+
+            if (tcgPrice && cardmarketPrice) {
+                const average = (tcgPrice + cardmarketPrice) / 2;
+                return {
+                    average: average.toFixed(2),
+                    tcgPrice: tcgPrice.toFixed(2),
+                    cardmarketPrice: cardmarketPrice.toFixed(2)
+                };
+            } else if (tcgPrice) {
+                return {
+                    average: tcgPrice.toFixed(2),
+                    tcgPrice: tcgPrice.toFixed(2),
+                    cardmarketPrice: null
+                };
+            } else if (cardmarketPrice) {
+                return {
+                    average: cardmarketPrice.toFixed(2),
+                    tcgPrice: null,
+                    cardmarketPrice: cardmarketPrice.toFixed(2)
+                };
+            }
+
+            return null;
         }
 
         function showCardDetails(cardId) {
@@ -895,10 +1404,6 @@
 
         function showError(message) {
             const errorElement = document.getElementById('error');
-            if (!errorElement) {
-                console.warn('Error element not found!');
-                return;
-            }
             errorElement.textContent = message;
             errorElement.style.display = 'block';
         }
@@ -944,109 +1449,76 @@
                 alert('Please select or take a photo of your card first!');
                 return;
             }
-            
-            // Show loading message with enhanced info
-            scannerImagePreview.innerHTML += '<div id="scanLoading" style="margin-top:10px; color:#a06cd5;">🔍 Scanning card with AI (English/Japanese/Korean)... Please wait 30-60 seconds for maximum accuracy.</div>';
+            scannerImagePreview.innerHTML += '<div id="ocrLoading" style="margin-top:10px; color:#a06cd5;">Scanning card... Please wait.</div>';
             scanCardBtn.disabled = true;
+            Tesseract.recognize(
+                selectedCardImage,
+                'eng',
+                { logger: m => {
+                    // Optionally, update progress here
+                } }
+            ).then(({ data: { text } }) => {
+                document.getElementById('ocrLoading').remove();
+                scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#e85d9e; background:#fff6fa; border-radius:12px; padding:10px;'>OCR Result:<br><pre style='white-space:pre-wrap; font-size:1em; color:#a06cd5;'>${text}</pre></div>`;
+                scanCardBtn.disabled = false;
+                // --- Extract card name and search ---
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length > 0) {
+                    const detectedName = lines[0];
+                    document.getElementById('searchInput').value = detectedName;
+                    scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#667eea; font-weight:bold;'>Detected card name: <span style='color:#e85d9e;'>${detectedName}</span><br>Searching for closest match...</div>`;
+                    searchCards(1);
+                } else {
+                    scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#c62828;'>Could not detect a card name from the image.</div>`;
+                }
+            }).catch(err => {
+                document.getElementById('ocrLoading').remove();
+                scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#c62828;'>OCR failed: ${err.message}</div>`;
+                scanCardBtn.disabled = false;
+            });
+        }
+
+        function refreshToFirstPage() {
+            // Clear search input
+            document.getElementById('searchInput').value = '';
             
-            // Convert base64 image to blob for upload
-            fetch(selectedCardImage)
-                .then(res => res.blob())
-                .then(blob => {
-                    // Create form data for upload
-                    const formData = new FormData();
-                    formData.append('file', blob, 'card.jpg');
-                    
-                    // Send to backend API
-                    return fetch('http://localhost:8000/search_card', {
-                        method: 'POST',
-                        body: formData
-                    });
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Remove loading message
-                    const loadingElement = document.getElementById('scanLoading');
-                    if (loadingElement) loadingElement.remove();
-                    
-                    if (data.success && data.matches && data.matches.length > 0) {
-                        const bestMatch = data.matches[0];
-                        const confidence = Math.round(bestMatch.similarity_score * 100);
-                        const visualScore = Math.round(bestMatch.visual_score * 100);
-                        const textScore = Math.round(bestMatch.text_score * 100);
-                        
-                        // Display enhanced results
-                        let resultsHtml = '<div style="margin-top:15px; background:#fff6fa; border-radius:18px; padding:18px 12px 12px 12px; text-align:center; box-shadow:0 4px 16px #e0c6f9a0;">';
-                        resultsHtml += `<div style="font-size:2rem;font-weight:bold;color:#e85d9e;margin-bottom:8px;">${bestMatch.name}</div>`;
-                        resultsHtml += bestMatch.set ? `<div style="display:inline-block;background:#ffe0f7;color:#e85d9e;padding:6px 18px;border-radius:999px;font-size:1.1rem;margin:6px 6px 0 0;">${bestMatch.set}</div>` : '';
-                        resultsHtml += bestMatch.rarity ? `<div style="display:inline-block;background:#fff3e0;color:#f57c00;padding:6px 18px;border-radius:999px;font-size:1.1rem;margin:6px 0 0 0;">${bestMatch.rarity}</div>` : '';
-                        
-                        // Show matched text if available
-                        if (bestMatch.matched_text) {
-                            resultsHtml += `<div style="margin-bottom:8px;"><strong>Detected Text:</strong> <span style="color:#9c27b0; font-style:italic;">"${bestMatch.matched_text}"</span></div>`;
-                        }
-                        
-                        // Show processing info
-                        if (data.processing_time) {
-                            resultsHtml += `<div style="margin-bottom:8px;"><strong>Processing Time:</strong> <span style="color:#607d8b;">${data.processing_time}</span></div>`;
-                        }
-                        
-                        // Show language detection
-                        if (data.languages_detected && data.languages_detected.length > 0) {
-                            const languages = data.languages_detected.filter(lang => lang !== 'unknown').map(lang => {
-                                const langNames = { 'en': 'English', 'ja': 'Japanese', 'ko': 'Korean' };
-                                return langNames[lang] || lang;
-                            });
-                            if (languages.length > 0) {
-                                resultsHtml += `<div style="margin-bottom:8px;"><strong>Languages Detected:</strong> <span style="color:#2196f3;">${languages.join(', ')}</span></div>`;
-                            }
-                        }
-                        
-                        // Show OCR info
-                        if (data.ocr_texts_found !== undefined) {
-                            resultsHtml += `<div style="margin-bottom:12px;"><strong>Text Blocks Found:</strong> <span style="color:#795548;">${data.ocr_texts_found}</span></div>`;
-                        }
-                        
-                        // Show top 3 matches with enhanced info
-                        if (data.matches.length > 1) {
-                            resultsHtml += '<div style="margin-top:10px; border-top:1px solid #e0c6f9; padding-top:10px;">';
-                            resultsHtml += '<strong>Other matches:</strong><br>';
-                            data.matches.slice(1, 4).forEach((match, idx) => {
-                                const conf = Math.round(match.similarity_score * 100);
-                                const visual = Math.round(match.visual_score * 100);
-                                const text = Math.round(match.text_score * 100);
-                                resultsHtml += `<div style="margin-top:5px; font-size:0.9em;">${idx + 2}. ${match.name} (${conf}% overall, ${visual}% visual, ${text}% text)</div>`;
-                            });
-                            resultsHtml += '</div>';
-                        }
-                        
-                        resultsHtml += '</div>';
-                        scannerImagePreview.innerHTML += resultsHtml;
-                        
-                        // Auto-search for the best match
-                        document.getElementById('searchInput').value = bestMatch.name;
-                        searchCards(1);
-                        
-                    } else {
-                        scannerImagePreview.innerHTML += '<div style="margin-top:15px; color:#c62828; background:#fff6fa; border-radius:12px; padding:15px;">❌ No matches found. Try taking a clearer photo of the card.<br><small>Make sure the card is well-lit and the text is readable.</small></div>';
-                    }
-                    
-                    scanCardBtn.disabled = false;
-                })
-                .catch(error => {
-                    // Remove loading message
-                    const loadingElement = document.getElementById('scanLoading');
-                    if (loadingElement) loadingElement.remove();
-                    
-                    console.error('Scan error:', error);
-                    scannerImagePreview.innerHTML += `<div style="margin-top:15px; color:#c62828; background:#fff6fa; border-radius:12px; padding:15px;">❌ Scan failed: ${error.message}<br><small>Make sure the backend server is running on localhost:8000</small></div>`;
-                    scanCardBtn.disabled = false;
-                });
+            // Reset filters
+            document.getElementById('rarityFilter').value = '';
+            document.getElementById('setFilter').value = '';
+            document.getElementById('sortFilter').value = 'set.releaseDate';
+            
+            // Reset sort order to descending
+            sortOrder = 'desc';
+            const sortOrderBtn = document.getElementById('sortOrderBtn');
+            sortOrderBtn.innerHTML = '📉 Descending';
+            sortOrderBtn.title = 'Current order: Descending';
+            
+            // Reset current query
+            currentQuery = '';
+            
+            // Load first page with default settings
+            searchCards(1);
+        }
+
+        function showPricePopup(event, encodedContent) {
+            // Close any open popups
+            document.querySelectorAll('.price-popup.show').forEach(p => p.classList.remove('show'));
+            // Find the popup for this card
+            const priceBtn = event.currentTarget;
+            const cardCompact = priceBtn.closest('.card-compact');
+            const popup = cardCompact.querySelector('.price-popup');
+            if (!popup) return;
+            // Set content and show
+            popup.innerHTML = decodeURIComponent(atob(encodedContent));
+            popup.classList.add('show');
+            // Close on outside click
+            function handleClickOutside(e) {
+                if (!popup.contains(e.target) && e.target !== priceBtn) {
+                    popup.classList.remove('show');
+                    document.removeEventListener('mousedown', handleClickOutside);
+                }
+            }
+            setTimeout(() => document.addEventListener('mousedown', handleClickOutside), 0);
         }
     </script>
 </body>
