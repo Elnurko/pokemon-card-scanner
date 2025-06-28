@@ -531,6 +531,32 @@
                 max-width: 100%;
             }
         }
+        @media (max-width: 600px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            .card-compact {
+                max-width: 100%;
+                width: 100%;
+            }
+            .container {
+                padding-left: 6px;
+                padding-right: 6px;
+            }
+            .card-mascot {
+                width: 32px !important;
+                height: 32px !important;
+                top: 32px !important;
+                right: 2px !important;
+            }
+            .card-mascot-sleeping-eevee {
+                width: 40px !important;
+                height: 20px !important;
+                top: 40px !important;
+                right: 0 !important;
+                border-radius: 8px !important;
+            }
+        }
 
         .card-horizontal {
             display: flex;
