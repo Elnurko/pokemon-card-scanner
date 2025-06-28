@@ -541,7 +541,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
     <script>
         const API_KEY = '37fb1c8c-429d-4d88-bce9-7e16b110e1e0';
         const API_BASE_URL = 'https://api.pokemontcg.io/v2';
@@ -556,18 +556,43 @@
         let sortBy = 'set.releaseDate';
         let sortOrder = 'desc'; // 'asc' or 'desc'
 
+        // --- Fuzzy card name search ---
+        let allCardNames = [];
+        let fuse = null;
+        async function loadAllCardNames() {
+            let page = 1;
+            let hasMore = true;
+            let names = [];
+            while (hasMore) {
+                const response = await fetch(`${API_BASE_URL}/cards?pageSize=250&page=${page}`, {
+                    headers: { 'X-Api-Key': API_KEY }
+                });
+                if (!response.ok) break;
+                const data = await response.json();
+                if (data.data && data.data.length > 0) {
+                    names.push(...data.data.map(card => card.name));
+                    hasMore = data.data.length === 250;
+                    page++;
+                } else {
+                    hasMore = false;
+                }
+            }
+            // Remove duplicates
+            allCardNames = Array.from(new Set(names));
+            fuse = new Fuse(allCardNames, { includeScore: true, threshold: 0.4 });
+        }
+
         // Load initial content on page load
         window.addEventListener('load', async () => {
             // Set default sort to newest set first
             sortBy = 'set.releaseDate';
             sortOrder = 'desc';
-            // Set the sort filter and sort order button to match
             document.getElementById('sortFilter').value = 'set.releaseDate';
             const sortOrderBtn = document.getElementById('sortOrderBtn');
             sortOrderBtn.innerHTML = '📉 Descending';
             sortOrderBtn.title = 'Current order: Descending';
             await loadSets();
-            // Always start on first page, newest to oldest
+            await loadAllCardNames();
             searchCards(1);
         });
 
@@ -621,199 +646,17 @@
         }
 
         async function searchCards(page = 1) {
-            const searchTerm = document.getElementById('searchInput').value.trim();
-            const rarityFilter = document.getElementById('rarityFilter').value;
-            const setFilter = document.getElementById('setFilter').value;
-            const sortFilter = document.getElementById('sortFilter').value;
-
-            currentPage = page;
-            sortBy = sortFilter || 'set.releaseDate';
             showLoading(true);
             hideError();
-
             try {
-                const filters = [];
-
-                // Build query filters
-                if (searchTerm) {
-                    const quoted = searchTerm.includes(' ') ? `"${searchTerm}"` : searchTerm;
-                    filters.push(`name:${quoted}`);
-                }
-                if (rarityFilter) {
-                    filters.push(`rarity:"${rarityFilter}"`);
-                }
-                if (setFilter) {
-                    filters.push(`set.id:${setFilter}`);
-                }
-
-                currentQuery = filters.length > 0 ? filters.join(' AND ') : '';
-
-                // Hybrid pagination for problematic rarities
-                const problematicRarities = ["Illustration Rare", "Special Illustration Rare"];
-                if (problematicRarities.includes(rarityFilter)) {
-                    // Fetch all cards matching the API's rarity filter (may include extras)
-                    let allCards = [];
-                    let apiPage = 1;
-                    let keepFetching = true;
-                    while (keepFetching) {
-                        const params = new URLSearchParams();
-                        if (currentQuery) params.append('q', currentQuery);
-                        params.append('page', apiPage.toString());
-                        params.append('pageSize', '250');
-                        let orderBy;
-                        if (sortBy === 'rarity') {
-                            orderBy = sortOrder === 'desc' ? '-rarity' : 'rarity';
-                        } else {
-                            orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
-                        }
-                        params.append('orderBy', orderBy);
-                        const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
-                            headers: { 'X-Api-Key': API_KEY }
-                        });
-                        if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                        const data = await response.json();
-                        allCards = allCards.concat(data.data || []);
-                        if (!data.data || data.data.length < 250) {
-                            keepFetching = false;
-                        } else {
-                            apiPage++;
-                        }
-                    }
-                    // Filter for exact rarity match
-                    let filteredCards = allCards.filter(card => card.rarity === rarityFilter);
-                    // Fuzzy search filter (client-side, only if searchTerm is present)
-                    if (searchTerm && filteredCards.length > 0) {
-                        const normSearch = normalize(searchTerm);
-                        filteredCards = filteredCards.filter(card =>
-                            normalize(card.name).includes(normSearch) ||
-                            normalize(card.set?.name).includes(normSearch)
-                        );
-                    }
-                    // Custom rarity sort (client-side)
-                    if (sortBy === "rarity") {
-                        const rarityOrder = [
-                            "Hyper Rare",
-                            "Special Illustration Rare",
-                            "Ultra Rare",
-                            "Illustration Rare",
-                            "Double Rare",
-                            "Uncommon",
-                            "Common"
-                        ];
-                        filteredCards.sort((a, b) => {
-                            const aIdx = rarityOrder.indexOf(a.rarity || "");
-                            const bIdx = rarityOrder.indexOf(b.rarity || "");
-                            return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
-                        });
-                        if (sortOrder === "asc") filteredCards.reverse();
-                    }
-                    // Paginate client-side
-                    totalCount = filteredCards.length;
-                    totalPages = Math.ceil(totalCount / pageSize);
-                    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
-                    const startIdx = (currentPage - 1) * pageSize;
-                    const endIdx = startIdx + pageSize;
-                    displayCards(filteredCards.slice(startIdx, endIdx));
-                    updateStats();
-                    updatePagination();
-                    showLoading(false);
-                    return;
-                }
-
-                // --- Normal API-side pagination for all other rarities ---
-                // First, get the total count
-                const countParams = new URLSearchParams();
-                if (currentQuery) {
-                    countParams.append('q', currentQuery);
-                }
-
-                const countResponse = await fetch(`${API_BASE_URL}/cards?${countParams.toString()}&pageSize=1`, {
-                    headers: {
-                        'X-Api-Key': API_KEY
-                    }
-                });
-
-                if (!countResponse.ok) {
-                    throw new Error(`API Error: ${countResponse.status} ${countResponse.statusText}`);
-                }
-
-                const countData = await countResponse.json();
-                totalCount = countData.totalCount || 0;
-                totalPages = Math.ceil(totalCount / pageSize);
-
-                if (page > totalPages && totalPages > 0) {
-                    currentPage = totalPages;
-                    page = totalPages;
-                }
-
-                // Now get the actual cards for the current page
-                const params = new URLSearchParams();
-                if (currentQuery) {
-                    params.append('q', currentQuery);
-                }
-                params.append('page', page.toString());
-                params.append('pageSize', pageSize.toString());
-
-                let orderBy;
-                if (sortBy === 'rarity') {
-                    orderBy = sortOrder === 'desc' ? '-rarity' : 'rarity';
-                } else {
-                    orderBy = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
-                }
-                params.append('orderBy', orderBy);
-
-                const response = await fetch(`${API_BASE_URL}/cards?${params.toString()}`, {
-                    headers: {
-                        'X-Api-Key': API_KEY
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                let filteredCards = data.data || [];
-
-                // Fuzzy search filter (client-side, only if searchTerm is present and API returns results)
-                if (searchTerm && filteredCards.length > 0) {
-                    const normSearch = normalize(searchTerm);
-                    filteredCards = filteredCards.filter(card =>
-                        normalize(card.name).includes(normSearch) ||
-                        normalize(card.set?.name).includes(normSearch)
-                    );
-                }
-
-                // Custom rarity sort (client-side)
-                if (sortBy === "rarity") {
-                    const rarityOrder = [
-                        "Hyper Rare",
-                        "Special Illustration Rare",
-                        "Ultra Rare",
-                        "Illustration Rare",
-                        "Double Rare",
-                        "Uncommon",
-                        "Common"
-                    ];
-                    filteredCards.sort((a, b) => {
-                        const aIdx = rarityOrder.indexOf(a.rarity || "");
-                        const bIdx = rarityOrder.indexOf(b.rarity || "");
-                        return (aIdx === -1 ? rarityOrder.length : aIdx) - (bIdx === -1 ? rarityOrder.length : bIdx);
-                    });
-                    if (sortOrder === "asc") filteredCards.reverse();
-                }
-
-                displayCards(filteredCards);
+                // Fetch all cards from backend
+                const cards = await fetchAllCardsFromBackend();
+                // Optionally filter/search client-side if needed
+                displayCards(cards);
                 updateStats();
                 updatePagination();
-
             } catch (error) {
-                console.error('Search error:', error);
-                showError(`Failed to search cards: ${error.message}`);
-                // Reset pagination on error
-                totalCount = 0;
-                totalPages = 1;
-                currentPage = 1;
+                showError('Failed to load cards from backend.');
             } finally {
                 showLoading(false);
             }
@@ -884,9 +727,12 @@
 
         function displayCards(cards) {
             const container = document.getElementById('cardsContainer');
-            
+            if (!container) {
+                console.warn('cardsContainer element not found!');
+                return;
+            }
             if (!cards || cards.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: white; font-size: 18px; grid-column: 1/-1; padding: 40px;">No cards found. Try a different search term or adjust your filters.</div>';
+                container.innerHTML = '<div style="text-align: center; color: #e85d9e; font-size: 18px; grid-column: 1/-1; padding: 40px;">No cards found. Try a different search term or adjust your filters.</div>';
                 return;
             }
 
@@ -1049,6 +895,10 @@
 
         function showError(message) {
             const errorElement = document.getElementById('error');
+            if (!errorElement) {
+                console.warn('Error element not found!');
+                return;
+            }
             errorElement.textContent = message;
             errorElement.style.display = 'block';
         }
@@ -1094,33 +944,109 @@
                 alert('Please select or take a photo of your card first!');
                 return;
             }
-            scannerImagePreview.innerHTML += '<div id="ocrLoading" style="margin-top:10px; color:#a06cd5;">Scanning card... Please wait.</div>';
+            
+            // Show loading message with enhanced info
+            scannerImagePreview.innerHTML += '<div id="scanLoading" style="margin-top:10px; color:#a06cd5;">🔍 Scanning card with AI (English/Japanese/Korean)... Please wait 30-60 seconds for maximum accuracy.</div>';
             scanCardBtn.disabled = true;
-            Tesseract.recognize(
-                selectedCardImage,
-                'eng',
-                { logger: m => {
-                    // Optionally, update progress here
-                } }
-            ).then(({ data: { text } }) => {
-                document.getElementById('ocrLoading').remove();
-                scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#e85d9e; background:#fff6fa; border-radius:12px; padding:10px;'>OCR Result:<br><pre style='white-space:pre-wrap; font-size:1em; color:#a06cd5;'>${text}</pre></div>`;
-                scanCardBtn.disabled = false;
-                // --- Extract card name and search ---
-                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                if (lines.length > 0) {
-                    const detectedName = lines[0];
-                    document.getElementById('searchInput').value = detectedName;
-                    scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#667eea; font-weight:bold;'>Detected card name: <span style='color:#e85d9e;'>${detectedName}</span><br>Searching for closest match...</div>`;
-                    searchCards(1);
-                } else {
-                    scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#c62828;'>Could not detect a card name from the image.</div>`;
-                }
-            }).catch(err => {
-                document.getElementById('ocrLoading').remove();
-                scannerImagePreview.innerHTML += `<div style='margin-top:10px; color:#c62828;'>OCR failed: ${err.message}</div>`;
-                scanCardBtn.disabled = false;
-            });
+            
+            // Convert base64 image to blob for upload
+            fetch(selectedCardImage)
+                .then(res => res.blob())
+                .then(blob => {
+                    // Create form data for upload
+                    const formData = new FormData();
+                    formData.append('file', blob, 'card.jpg');
+                    
+                    // Send to backend API
+                    return fetch('http://localhost:8000/search_card', {
+                        method: 'POST',
+                        body: formData
+                    });
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove loading message
+                    const loadingElement = document.getElementById('scanLoading');
+                    if (loadingElement) loadingElement.remove();
+                    
+                    if (data.success && data.matches && data.matches.length > 0) {
+                        const bestMatch = data.matches[0];
+                        const confidence = Math.round(bestMatch.similarity_score * 100);
+                        const visualScore = Math.round(bestMatch.visual_score * 100);
+                        const textScore = Math.round(bestMatch.text_score * 100);
+                        
+                        // Display enhanced results
+                        let resultsHtml = '<div style="margin-top:15px; background:#fff6fa; border-radius:18px; padding:18px 12px 12px 12px; text-align:center; box-shadow:0 4px 16px #e0c6f9a0;">';
+                        resultsHtml += `<div style="font-size:2rem;font-weight:bold;color:#e85d9e;margin-bottom:8px;">${bestMatch.name}</div>`;
+                        resultsHtml += bestMatch.set ? `<div style="display:inline-block;background:#ffe0f7;color:#e85d9e;padding:6px 18px;border-radius:999px;font-size:1.1rem;margin:6px 6px 0 0;">${bestMatch.set}</div>` : '';
+                        resultsHtml += bestMatch.rarity ? `<div style="display:inline-block;background:#fff3e0;color:#f57c00;padding:6px 18px;border-radius:999px;font-size:1.1rem;margin:6px 0 0 0;">${bestMatch.rarity}</div>` : '';
+                        
+                        // Show matched text if available
+                        if (bestMatch.matched_text) {
+                            resultsHtml += `<div style="margin-bottom:8px;"><strong>Detected Text:</strong> <span style="color:#9c27b0; font-style:italic;">"${bestMatch.matched_text}"</span></div>`;
+                        }
+                        
+                        // Show processing info
+                        if (data.processing_time) {
+                            resultsHtml += `<div style="margin-bottom:8px;"><strong>Processing Time:</strong> <span style="color:#607d8b;">${data.processing_time}</span></div>`;
+                        }
+                        
+                        // Show language detection
+                        if (data.languages_detected && data.languages_detected.length > 0) {
+                            const languages = data.languages_detected.filter(lang => lang !== 'unknown').map(lang => {
+                                const langNames = { 'en': 'English', 'ja': 'Japanese', 'ko': 'Korean' };
+                                return langNames[lang] || lang;
+                            });
+                            if (languages.length > 0) {
+                                resultsHtml += `<div style="margin-bottom:8px;"><strong>Languages Detected:</strong> <span style="color:#2196f3;">${languages.join(', ')}</span></div>`;
+                            }
+                        }
+                        
+                        // Show OCR info
+                        if (data.ocr_texts_found !== undefined) {
+                            resultsHtml += `<div style="margin-bottom:12px;"><strong>Text Blocks Found:</strong> <span style="color:#795548;">${data.ocr_texts_found}</span></div>`;
+                        }
+                        
+                        // Show top 3 matches with enhanced info
+                        if (data.matches.length > 1) {
+                            resultsHtml += '<div style="margin-top:10px; border-top:1px solid #e0c6f9; padding-top:10px;">';
+                            resultsHtml += '<strong>Other matches:</strong><br>';
+                            data.matches.slice(1, 4).forEach((match, idx) => {
+                                const conf = Math.round(match.similarity_score * 100);
+                                const visual = Math.round(match.visual_score * 100);
+                                const text = Math.round(match.text_score * 100);
+                                resultsHtml += `<div style="margin-top:5px; font-size:0.9em;">${idx + 2}. ${match.name} (${conf}% overall, ${visual}% visual, ${text}% text)</div>`;
+                            });
+                            resultsHtml += '</div>';
+                        }
+                        
+                        resultsHtml += '</div>';
+                        scannerImagePreview.innerHTML += resultsHtml;
+                        
+                        // Auto-search for the best match
+                        document.getElementById('searchInput').value = bestMatch.name;
+                        searchCards(1);
+                        
+                    } else {
+                        scannerImagePreview.innerHTML += '<div style="margin-top:15px; color:#c62828; background:#fff6fa; border-radius:12px; padding:15px;">❌ No matches found. Try taking a clearer photo of the card.<br><small>Make sure the card is well-lit and the text is readable.</small></div>';
+                    }
+                    
+                    scanCardBtn.disabled = false;
+                })
+                .catch(error => {
+                    // Remove loading message
+                    const loadingElement = document.getElementById('scanLoading');
+                    if (loadingElement) loadingElement.remove();
+                    
+                    console.error('Scan error:', error);
+                    scannerImagePreview.innerHTML += `<div style="margin-top:15px; color:#c62828; background:#fff6fa; border-radius:12px; padding:15px;">❌ Scan failed: ${error.message}<br><small>Make sure the backend server is running on localhost:8000</small></div>`;
+                    scanCardBtn.disabled = false;
+                });
         }
     </script>
 </body>
